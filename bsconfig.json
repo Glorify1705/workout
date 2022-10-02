@@ -1,0 +1,25 @@
+{
+  "name": "workout",
+  "namespace": true,
+  "refmt": 3,
+  "suffix": ".bs.js",
+  "reason": { "react-jsx": 3 },
+  "bsc-flags": [
+    "-bs-super-errors",
+    "-bs-no-version-header"
+  ],
+  "sources": {
+    "dir": "src",
+    "subdirs": true
+  },
+  "package-specs": [
+    {
+      "module": "es6",
+      "in-source": true
+    }
+  ],
+  "bs-dependencies": [
+    "@rescript/react"
+  ],
+  "bs-dev-dependencies": []
+}

@@ -12,13 +12,15 @@ module StringUtils = {
 }
 
 module Movement = {
-  type movement = Squat | Bench | Deadlift
+  type movement = Squat | Bench | Deadlift | Pullups | BarbellRows
 
   let toString = (m: movement) =>
     switch m {
     | Squat => "squat"
     | Bench => "bench"
     | Deadlift => "deadlift"
+    | Pullups => "pullups"
+    | BarbellRows => "barbell rows"
     }
 
   let movements = [Squat, Bench, Deadlift]
@@ -28,6 +30,8 @@ module Movement = {
     | "squat" => Some(Squat)
     | "bench" => Some(Bench)
     | "deadlift" => Some(Deadlift)
+    | "pullups" => Some(Pullups)
+    | "barbell rows" => Some(BarbellRows)
     | _ => None
     }
   }
@@ -36,7 +40,7 @@ module Movement = {
 module Workout = {
   type weightMeasure = Kg | Lb
 
-  type weightScheme = Weight(int, weightMeasure) | Amrap | Rpe(int)
+  type weightScheme = Weight(int, weightMeasure) | Amrap | Rpe(int) | Bodyweight
 
   type set = {reps: int, weight: weightScheme}
 
@@ -61,6 +65,7 @@ module Workout = {
       }
     | Amrap => "AMRAP"
     | Rpe(rpe) => "@" ++ Belt.Int.toString(rpe)
+    | Bodyweight => ""
     }
   }
 

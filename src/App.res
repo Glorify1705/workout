@@ -83,23 +83,6 @@ module Workout = {
   let exerciseToString = (e: exercise) => {
     StringUtils.capitalize(Movement.toString(e.movement)) ++ " - " ++ setSchemeToString(e.sets)
   }
-
-  exception ParsingError
-
-  // exercise, sets x reps @ (RPE N | AMRAP | 100 kg | 100 lb)
-  let parseExercise = (s: string): Belt.Result.t<exercise, string> => {
-    try {
-      let pos = ref(0)
-      let consumeWhitespace = () => {
-        while Js.String2.get(s, pos.contents) == " " {
-          pos := pos.contents + 1
-        }
-      }
-      Belt.Result.Ok({movement: Squat, sets: Sets([])})
-    } catch {
-    | ParsingError => Belt.Result.Error("failed to parse")
-    }
-  }
 }
 
 module MovementSelector = {
@@ -163,36 +146,20 @@ module WorkoutComponent = {
   }
 }
 
-let thePlan: Workout.plan = {
-  exercise: [
-    {
-      movement: Movement.Squat,
-      sets: SetsAcross(
-        5,
-        {
-          reps: 5,
-          weight: Workout.Weight(100, Workout.Kg),
-        },
-      ),
-    },
-    {
-      movement: Movement.Deadlift,
-      sets: SetsAcross(
-        4,
-        {
-          reps: 8,
-          weight: Workout.Weight(140, Workout.Kg),
-        },
-      ),
-    },
-  ],
+type action = AddExercise(Movement.movement, Workout.setScheme)
+let reducer = (state: Workout.plan, a: action) => {
+  open Workout
+  switch a {
+  | AddExercise(m, s) => {exercise: [{movement: m, sets: s}]->Js.Array.concat(state.exercise)}
+  }
 }
 
 @react.component
 let make = () => {
+  let (plan, dispatch) = React.useReducer(reducer, {exercise: []})
   <div>
     <h1> {React.string("Workout")} </h1>
-    <WorkoutComponent plan=thePlan />
+    <WorkoutComponent plan />
     <MovementSelector update={m => Js.log(m)} />
     <span>
       {React.string("Sets: ")}
@@ -206,6 +173,15 @@ let make = () => {
       {React.string("Weight: ")}
       <InputNumberComponent update={v => Js.log(v)} />
     </span>
-    <button> {React.string("Add")} </button>
+    <button
+      onClick={_ =>
+        dispatch(
+          AddExercise(
+            Movement.Squat,
+            Workout.SetsAcross(4, {reps: 4, weight: Workout.Weight(100, Workout.Lb)}),
+          ),
+        )}>
+      {React.string("Add")}
+    </button>
   </div>
 }

@@ -146,11 +146,56 @@ module WorkoutComponent = {
   }
 }
 
-type action = AddExercise(Movement.movement, Workout.setScheme)
+module ExerciseAdder = {
+  type exercise = {
+    movement: Movement.movement,
+    sets: int,
+    reps: int,
+    weight: int,
+  }
+  @react.component
+  let make = (~update: Workout.exercise => unit) => {
+    let (state, setState) = React.useState(() => {
+      movement: Movement.Squat,
+      sets: 0,
+      reps: 0,
+      weight: 0,
+    })
+    <div>
+      <MovementSelector update={movement => setState(state => {...state, movement})} />
+      <span>
+        {React.string("Sets: ")}
+        <InputNumberComponent update={sets => setState(state => {...state, sets})} />
+      </span>
+      <span>
+        {React.string("Reps: ")}
+        <InputNumberComponent update={reps => setState(state => {...state, reps})} />
+      </span>
+      <span>
+        {React.string("Weight: ")}
+        <InputNumberComponent update={weight => setState(state => {...state, weight})} />
+      </span>
+      <button
+        onClick={_ => {
+          let {movement, sets, reps, weight} = state
+          update({
+            movement,
+            sets: Workout.SetsAcross(sets, {reps, weight: Workout.Weight(weight, Workout.Kg)}),
+          })
+        }}>
+        {React.string("Add")}
+      </button>
+    </div>
+  }
+}
+
+type action = AddExercise(Workout.exercise)
 let reducer = (state: Workout.plan, a: action) => {
   open Workout
   switch a {
-  | AddExercise(m, s) => {exercise: [{movement: m, sets: s}]->Js.Array.concat(state.exercise)}
+  | AddExercise(e) => {
+      exercise: [e]->Js.Array.concat(state.exercise),
+    }
   }
 }
 
@@ -158,30 +203,8 @@ let reducer = (state: Workout.plan, a: action) => {
 let make = () => {
   let (plan, dispatch) = React.useReducer(reducer, {exercise: []})
   <div>
-    <h1> {React.string("Workout")} </h1>
+    <h1> {React.string("Workout tracker")} </h1>
     <WorkoutComponent plan />
-    <MovementSelector update={m => Js.log(m)} />
-    <span>
-      {React.string("Sets: ")}
-      <InputNumberComponent update={v => Js.log(v)} />
-    </span>
-    <span>
-      {React.string("Reps: ")}
-      <InputNumberComponent update={v => Js.log(v)} />
-    </span>
-    <span>
-      {React.string("Weight: ")}
-      <InputNumberComponent update={v => Js.log(v)} />
-    </span>
-    <button
-      onClick={_ =>
-        dispatch(
-          AddExercise(
-            Movement.Squat,
-            Workout.SetsAcross(4, {reps: 4, weight: Workout.Weight(100, Workout.Lb)}),
-          ),
-        )}>
-      {React.string("Add")}
-    </button>
+    <ExerciseAdder update={exercise => dispatch(AddExercise(exercise))} />
   </div>
 }

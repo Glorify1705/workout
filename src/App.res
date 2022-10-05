@@ -133,12 +133,22 @@ module InputNumberComponent = {
 
 module WorkoutComponent = {
   @react.component
-  let make = (~plan: Workout.plan) => {
+  let make = (~plan: Workout.plan, ~delete: int => unit) => {
+    open Workout
     <div>
       <ul>
         {React.array(
           Belt.Array.mapWithIndex(plan.exercise, (i, e) =>
-            <li key={Belt.Int.toString(i)}> {React.string(Workout.exerciseToString(e))} </li>
+            <li key={Belt.Int.toString(i)}>
+              {React.string(Workout.exerciseToString(e))}
+              <button
+                onClick={e => {
+                  ReactEvent.Mouse.preventDefault(e)
+                  delete(i)
+                }}>
+                {React.string("X")}
+              </button>
+            </li>
           ),
         )}
       </ul>
@@ -189,12 +199,18 @@ module ExerciseAdder = {
   }
 }
 
-type action = AddExercise(Workout.exercise)
+type action = AddExercise(Workout.exercise) | DeleteExercise(int)
 let reducer = (state: Workout.plan, a: action) => {
   open Workout
   switch a {
   | AddExercise(e) => {
       exercise: [e]->Js.Array.concat(state.exercise),
+    }
+  | DeleteExercise(i) => {
+      let length = Js.Array2.length(state.exercise)
+      let prefix = state.exercise->Js.Array2.slice(~start=0, ~end_=i)
+      let suffix = state.exercise->Js.Array2.slice(~start=i + 1, ~end_=length)
+      {exercise: Js.Array2.concat(prefix, suffix)}
     }
   }
 }
@@ -204,7 +220,7 @@ let make = () => {
   let (plan, dispatch) = React.useReducer(reducer, {exercise: []})
   <div>
     <h1> {React.string("Workout tracker")} </h1>
-    <WorkoutComponent plan />
+    <WorkoutComponent plan delete={i => dispatch(DeleteExercise(i))} />
     <ExerciseAdder update={exercise => dispatch(AddExercise(exercise))} />
   </div>
 }

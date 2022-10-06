@@ -64,7 +64,7 @@ module Workout = {
       | Lb => "lb."
       }
     | Amrap => "AMRAP"
-    | Rpe(rpe) => "@" ++ Belt.Int.toString(rpe)
+    | Rpe(rpe) => "RPE " ++ Belt.Int.toString(rpe)
     | Bodyweight => ""
     }
   }
@@ -158,23 +158,27 @@ module WeightSelector = {
   type component = [#Kg | #Lb | #Rpe]
 
   @react.component
-  let make = (~update) => {
+  let make = (~update: Workout.weightScheme => unit) => {
     let (state, setState) = React.useState(() => (#Kg, 0))
-    let (_, value) = state
+    let (c, v) = state
+    React.useEffect2(() => {
+      update(
+        switch c {
+        | #Kg => Workout.Weight(v, Workout.Kg)
+        | #Lb => Workout.Weight(v, Workout.Lb)
+        | #Rpe => Workout.Rpe(v)
+        | _ => Workout.Bodyweight
+        },
+      )
+      None
+    }, state)
     let onChange = event => {
       ReactEvent.Form.preventDefault(event)
       let c = ReactEvent.Form.target(event)["value"]
-      update(
-        switch c {
-        | #Kg => Workout.Weight(value, Workout.Kg)
-        | #Lb => Workout.Weight(value, Workout.Lb)
-        | #Rpe => Workout.Rpe(value)
-        },
-      )
       setState(((_c, v)) => (c, v))
     }
     <span>
-      <InputNumberComponent value update={v => setState(((c, _v)) => (c, v))} />
+      <InputNumberComponent value={v} update={v => setState(((c, _v)) => (c, v))} />
       <select onChange>
         {React.array(
           [#Kg, #Lb, #Rpe]->Belt.Array.mapWithIndex((i, c) =>

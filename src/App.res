@@ -113,21 +113,18 @@ module MovementSelector = {
 
 module InputNumberComponent = {
   @react.component
-  let make = (~update: int => unit) => {
-    let (_, setValue) = React.useState(_ => 0)
+  let make = (~value: int, ~update: int => unit) => {
     let onChange = event => {
       ReactEvent.Form.preventDefault(event)
-      let value = ReactEvent.Form.target(event)["value"]
-      setValue(prev => {
-        let m = switch Belt.Int.fromString(value) {
+      let inputValue = ReactEvent.Form.target(event)["value"]
+      update(
+        switch Belt.Int.fromString(inputValue) {
         | Some(next) => next
-        | None => prev
-        }
-        update(m)
-        m
-      })
+        | None => value
+        },
+      )
     }
-    <input pattern="[0-9]+" type_="number" onChange />
+    <input pattern="[0-9]+" value={Belt.Int.toString(value)} type_="number" onChange />
   }
 }
 
@@ -156,12 +153,47 @@ module WorkoutComponent = {
   }
 }
 
+module WeightSelector = {
+  @deriving(jsConverter)
+  type component = [#Kg | #Lb | #Rpe]
+
+  @react.component
+  let make = (~update) => {
+    let (state, setState) = React.useState(() => (#Kg, 0))
+    let (_, value) = state
+    let onChange = event => {
+      ReactEvent.Form.preventDefault(event)
+      let c = ReactEvent.Form.target(event)["value"]
+      update(
+        switch c {
+        | #Kg => Workout.Weight(value, Workout.Kg)
+        | #Lb => Workout.Weight(value, Workout.Lb)
+        | #Rpe => Workout.Rpe(value)
+        },
+      )
+      setState(((_c, v)) => (c, v))
+    }
+    <span>
+      <InputNumberComponent value update={v => setState(((c, _v)) => (c, v))} />
+      <select onChange>
+        {React.array(
+          [#Kg, #Lb, #Rpe]->Belt.Array.mapWithIndex((i, c) =>
+            <option key={Belt.Int.toString(i)} value={componentToJs(c)}>
+              {React.string(componentToJs(c))}
+            </option>
+          ),
+        )}
+      </select>
+    </span>
+  }
+}
+
 module ExerciseAdder = {
   type exercise = {
     movement: Movement.movement,
     sets: int,
     reps: int,
-    weight: int,
+    weight: Workout.weightScheme,
   }
   @react.component
   let make = (~update: Workout.exercise => unit) => {
@@ -169,28 +201,25 @@ module ExerciseAdder = {
       movement: Movement.Squat,
       sets: 0,
       reps: 0,
-      weight: 0,
+      weight: Workout.Bodyweight,
     })
+    let {movement, sets, reps, weight} = state
     <div>
       <MovementSelector update={movement => setState(state => {...state, movement})} />
       <span>
         {React.string("Sets: ")}
-        <InputNumberComponent update={sets => setState(state => {...state, sets})} />
+        <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
       </span>
       <span>
         {React.string("Reps: ")}
-        <InputNumberComponent update={reps => setState(state => {...state, reps})} />
+        <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
       </span>
-      <span>
-        {React.string("Weight: ")}
-        <InputNumberComponent update={weight => setState(state => {...state, weight})} />
-      </span>
+      <WeightSelector update={weight => setState(state => {...state, weight})} />
       <button
         onClick={_ => {
-          let {movement, sets, reps, weight} = state
           update({
             movement,
-            sets: Workout.SetsAcross(sets, {reps, weight: Workout.Weight(weight, Workout.Kg)}),
+            sets: Workout.SetsAcross(sets, {reps, weight}),
           })
         }}>
         {React.string("Add")}

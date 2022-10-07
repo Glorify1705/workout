@@ -88,21 +88,26 @@ module Workout = {
 module MovementSelector = {
   @react.component
   let make = (~value: Movement.movement, ~update: Movement.movement => unit) => {
+    let (_, setMovement) = React.useState(_ => Movement.Squat)
     let onChange = event => {
       ReactEvent.Form.preventDefault(event)
       let value = ReactEvent.Form.target(event)["value"]
-      update(
-        switch Movement.fromString(value) {
+      setMovement(prev => {
+        let m = switch Movement.fromString(value) {
         | Some(next) => next
-        | None => Movement.Squat
-        },
-      )
+        | None => prev
+        }
+        update(m)
+        m
+      })
     }
-    let selectors = Movement.movements->Belt.Array.map(m => {
+    let selectors = Movement.movements->Belt.Array.mapWithIndex((i, m) => {
       let ms = Movement.toString(m)
-      <option key={ms} value={ms}> {React.string(StringUtils.capitalize(ms))} </option>
+      <option key={Belt.Int.toString(i)} value={ms}>
+        {React.string(StringUtils.capitalize(ms))}
+      </option>
     })
-    <select value={Movement.toString(value)} onChange> {React.array(selectors)} </select>
+    <select onChange> {React.array(selectors)} </select>
   }
 }
 
@@ -204,9 +209,7 @@ module ExerciseAdder = {
     })
     let {movement, sets, reps, weight} = state
     <div>
-      <MovementSelector
-        value={movement} update={movement => setState(state => {...state, movement})}
-      />
+      <MovementSelector update={movement => setState(state => {...state, movement})} />
       <span>
         {React.string("Sets: ")}
         <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />

@@ -23,7 +23,7 @@ module Movement = {
     | BarbellRows => "barbell rows"
     }
 
-  let movements = [Squat, Bench, Deadlift]
+  let movements = [Squat, Bench, Deadlift, Pullups, BarbellRows]
 
   let fromString = (s: string) => {
     switch s {
@@ -149,8 +149,14 @@ module WorkoutComponent = {
 }
 
 module WeightSelector = {
-  @deriving(jsConverter)
-  type component = [#Kg | #Lb | #Rpe]
+  type weightUnit = [#Kg | #Lb | #Rpe]
+
+  let weightUnitToString = w =>
+    switch w {
+    | #Kg => "Kg"
+    | #Lb => "Lb"
+    | #Rpe => "RPE"
+    }
 
   @react.component
   let make = (~update: Workout.weightScheme => unit) => {
@@ -162,7 +168,6 @@ module WeightSelector = {
         | #Kg => Workout.Weight(v, Workout.Kg)
         | #Lb => Workout.Weight(v, Workout.Lb)
         | #Rpe => Workout.Rpe(v)
-        | _ => Workout.Bodyweight
         },
       )
       None
@@ -174,13 +179,12 @@ module WeightSelector = {
     }
     <span>
       <InputNumberComponent value={v} update={v => setState(((c, _v)) => (c, v))} />
-      <select onChange>
+      <select value={weightUnitToString(c)} onChange>
         {React.array(
-          [#Kg, #Lb, #Rpe]->Belt.Array.mapWithIndex((i, c) =>
-            <option key={Belt.Int.toString(i)} value={componentToJs(c)}>
-              {React.string(componentToJs(c))}
-            </option>
-          ),
+          [#Kg, #Lb, #Rpe]->Belt.Array.map(v => {
+            let val = weightUnitToString(v)
+            <option key={val} value={val}> {React.string(val)} </option>
+          }),
         )}
       </select>
     </span>

@@ -19,7 +19,8 @@
     }
   ],
   "bs-dependencies": [
-    "@rescript/react"
+    "@rescript/react",
+    "@ryyppy/rescript-promise"
   ],
   "bs-dev-dependencies": []
 }

@@ -37,25 +37,12 @@ module Movement = {
   }
 }
 
-module Workout = {
-  type weightMeasure = Kg | Lb
+module WeightScheme = {
+  type measure = Kg | Lb
 
-  type weightScheme = Weight(int, weightMeasure) | Amrap | Rpe(int) | Bodyweight
+  type scheme = Weight(int, measure) | Amrap | Rpe(int) | Bodyweight
 
-  type set = {reps: int, weight: weightScheme}
-
-  type setScheme =
-    | SetsAcross(int, set)
-    | Sets(array<set>)
-
-  type exercise = {
-    movement: Movement.movement,
-    sets: setScheme,
-  }
-
-  type plan = {exercise: array<exercise>}
-
-  let weightSchemeToString = (w: weightScheme) => {
+  let toString = (w: scheme) => {
     switch w {
     | Weight(weight, metric) =>
       Belt.Int.toString(weight) ++
@@ -68,21 +55,40 @@ module Workout = {
     | Bodyweight => ""
     }
   }
+}
+
+module SetScheme = {
+  type set = {reps: int, weight: WeightScheme.scheme}
+
+  type scheme =
+    | SetsAcross(int, set)
+    | Sets(array<set>)
 
   let setToString = (s: set) => {
-    Belt.Int.toString(s.reps) ++ " @ " ++ weightSchemeToString(s.weight)
+    Belt.Int.toString(s.reps) ++ " @ " ++ WeightScheme.toString(s.weight)
   }
 
-  let setSchemeToString = (s: setScheme) => {
+  let toString = (s: scheme) => {
     switch s {
     | SetsAcross(sets, set) => Belt.Int.toString(sets) ++ "x" ++ setToString(set)
     | Sets(sets) => Belt.Array.joinWith(sets, ", ", setToString)
     }
   }
+}
+
+module Workout = {
+  type exercise = {
+    movement: Movement.movement,
+    sets: SetScheme.scheme,
+  }
+
+  type plan = {exercise: array<exercise>}
 
   let exerciseToString = (e: exercise) => {
-    StringUtils.capitalize(Movement.toString(e.movement)) ++ " - " ++ setSchemeToString(e.sets)
+    StringUtils.capitalize(Movement.toString(e.movement)) ++ " - " ++ SetScheme.toString(e.sets)
   }
+
+  let planToString = (p: plan) => Belt.Array.joinWith(p.exercise, "\n", exerciseToString)
 }
 
 module MovementSelector = {
@@ -123,27 +129,34 @@ module InputNumberComponent = {
   }
 }
 
+module SetSchemeDisplay = {
+  @react.component
+  let make = (~sets: SetScheme.scheme) => {
+    <span className="movement=display"> {React.string(SetScheme.toString(sets))} </span>
+  }
+}
+
 module WorkoutComponent = {
   @react.component
   let make = (~plan: Workout.plan, ~delete: int => unit) => {
     open Workout
-    <div>
-      <ul>
-        {React.array(
-          Belt.Array.mapWithIndex(plan.exercise, (i, e) =>
-            <li key={Belt.Int.toString(i)}>
-              {React.string(Workout.exerciseToString(e))}
-              <button
-                onClick={e => {
-                  ReactEvent.Mouse.preventDefault(e)
-                  delete(i)
-                }}>
-                {React.string("X")}
-              </button>
-            </li>
-          ),
-        )}
-      </ul>
+    <div className="exercise-display">
+      {React.array(
+        Belt.Array.mapWithIndex(plan.exercise, (i, e) => {
+          let {movement, sets} = e
+          <div key={Belt.Int.toString(i)}>
+            <span className="movement=display"> {React.string(Movement.toString(movement))} </span>
+            <SetSchemeDisplay sets />
+            <button
+              onClick={e => {
+                ReactEvent.Mouse.preventDefault(e)
+                delete(i)
+              }}>
+              {React.string("X")}
+            </button>
+          </div>
+        }),
+      )}
     </div>
   }
 }
@@ -159,15 +172,15 @@ module WeightSelector = {
     }
 
   @react.component
-  let make = (~update: Workout.weightScheme => unit) => {
+  let make = (~update: WeightScheme.scheme => unit) => {
     let (state, setState) = React.useState(() => (#Kg, 0))
     let (c, v) = state
     React.useEffect2(() => {
       update(
         switch c {
-        | #Kg => Workout.Weight(v, Workout.Kg)
-        | #Lb => Workout.Weight(v, Workout.Lb)
-        | #Rpe => Workout.Rpe(v)
+        | #Kg => WeightScheme.Weight(v, WeightScheme.Kg)
+        | #Lb => WeightScheme.Weight(v, WeightScheme.Lb)
+        | #Rpe => WeightScheme.Rpe(v)
         },
       )
       None
@@ -196,7 +209,7 @@ module ExerciseAdder = {
     movement: Movement.movement,
     sets: int,
     reps: int,
-    weight: Workout.weightScheme,
+    weight: WeightScheme.scheme,
   }
   @react.component
   let make = (~update: Workout.exercise => unit) => {
@@ -204,7 +217,7 @@ module ExerciseAdder = {
       movement: Movement.Squat,
       sets: 0,
       reps: 0,
-      weight: Workout.Bodyweight,
+      weight: WeightScheme.Bodyweight,
     })
     let {movement, sets, reps, weight} = state
     <div>
@@ -224,7 +237,7 @@ module ExerciseAdder = {
         onClick={_ => {
           update({
             movement,
-            sets: Workout.SetsAcross(sets, {reps, weight}),
+            sets: SetScheme.SetsAcross(sets, {reps, weight}),
           })
         }}>
         {React.string("Add")}
@@ -249,12 +262,26 @@ let reducer = (state: Workout.plan, a: action) => {
   }
 }
 
+module Clipboard = {
+  @val external write: string => Js.Promise.t<'a> = "navigator.clipboard.writeText"
+}
+
 @react.component
 let make = () => {
   let (plan, dispatch) = React.useReducer(reducer, {exercise: []})
+  let copyToClipboard = plan => {
+    Clipboard.write(Workout.planToString(plan))
+    ->Promise.catch(err => {
+      Js.log(err)
+      Js.Promise.resolve()
+    })
+    ->ignore
+  }
   <div>
     <h1> {React.string("Workout tracker")} </h1>
     <WorkoutComponent plan delete={i => dispatch(DeleteExercise(i))} />
     <ExerciseAdder update={exercise => dispatch(AddExercise(exercise))} />
+    <hr />
+    <button onClick={_ => copyToClipboard(plan)}> {React.string("Copy to clipboard")} </button>
   </div>
 }

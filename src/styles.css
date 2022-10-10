@@ -1,0 +1,29 @@
+#root {
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#root h1 {
+    text-align: center;
+    border-bottom: 1px solid black;
+}
+
+#exercise-adder {
+    text-align: center;
+}
+
+.input {
+    margin-left: 0.3em;
+}
+
+input[type="number"] {
+    width: 4em;
+}
+
+.copiers {
+    margin-top: 1em;
+    padding-top: 1em;
+    border-top: 1px solid black;
+    text-align: right;
+}

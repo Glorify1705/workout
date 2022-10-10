@@ -108,7 +108,9 @@ module MovementSelector = {
       let ms = Movement.toString(m)
       <option key={ms} value={ms}> {React.string(StringUtils.capitalize(ms))} </option>
     })
-    <select value={Movement.toString(value)} onChange> {React.array(selectors)} </select>
+    <select className="input" value={Movement.toString(value)} onChange>
+      {React.array(selectors)}
+    </select>
   }
 }
 
@@ -132,7 +134,7 @@ module InputNumberComponent = {
 module SetSchemeDisplay = {
   @react.component
   let make = (~sets: SetScheme.scheme) => {
-    <span className="movement=display"> {React.string(SetScheme.toString(sets))} </span>
+    <span className="scheme-display"> {React.string(SetScheme.toString(sets))} </span>
   }
 }
 
@@ -145,7 +147,7 @@ module WorkoutComponent = {
         Belt.Array.mapWithIndex(plan.exercise, (i, e) => {
           let {movement, sets} = e
           <div key={Belt.Int.toString(i)}>
-            <span className="movement=display"> {React.string(Movement.toString(movement))} </span>
+            <span className="movement-display"> {React.string(Movement.toString(movement))} </span>
             <SetSchemeDisplay sets />
             <button
               onClick={e => {
@@ -190,7 +192,7 @@ module WeightSelector = {
       let c = ReactEvent.Form.target(event)["value"]
       setState(((_c, v)) => (c, v))
     }
-    <span>
+    <span className="input">
       <InputNumberComponent value={v} update={v => setState(((c, _v)) => (c, v))} />
       <select value={weightUnitToString(c)} onChange>
         {React.array(
@@ -220,20 +222,21 @@ module ExerciseAdder = {
       weight: WeightScheme.Bodyweight,
     })
     let {movement, sets, reps, weight} = state
-    <div>
+    <div id="exercise-adder">
       <MovementSelector
         value={movement} update={movement => setState(state => {...state, movement})}
       />
-      <span>
+      <span className="input">
         {React.string("Sets: ")}
         <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
       </span>
-      <span>
+      <span className="input">
         {React.string("Reps: ")}
         <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
       </span>
       <WeightSelector update={weight => setState(state => {...state, weight})} />
       <button
+        className="input"
         onClick={_ => {
           update({
             movement,
@@ -281,7 +284,8 @@ let make = () => {
     <h1> {React.string("Workout tracker")} </h1>
     <WorkoutComponent plan delete={i => dispatch(DeleteExercise(i))} />
     <ExerciseAdder update={exercise => dispatch(AddExercise(exercise))} />
-    <hr />
-    <button onClick={_ => copyToClipboard(plan)}> {React.string("Copy to clipboard")} </button>
+    <div className="copiers">
+      <button onClick={_ => copyToClipboard(plan)}> {React.string("Copy to clipboard")} </button>
+    </div>
   </div>
 }

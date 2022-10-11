@@ -27,3 +27,7 @@ input[type="number"] {
     border-top: 1px solid black;
     text-align: right;
 }
+
+.scheme-display {
+    padding-left: 0.5em;
+}

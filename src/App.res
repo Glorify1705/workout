@@ -146,7 +146,7 @@ module WorkoutComponent = {
                 ReactEvent.Mouse.preventDefault(e)
                 delete(i)
               }}>
-              {React.string("X")}
+              {React.string("✖")}
             </button>
           </div>
         }),
@@ -198,15 +198,10 @@ module WeightSelector = {
   }
 }
 
-module ExerciseAdder = {
+module ExerciseEditor = {
   @react.component
-  let make = (~update: Workout.exercise => unit) => {
-    let (state, setState) = React.useState((): Workout.exercise => {
-      movement: Movement.Squat,
-      sets: 0,
-      reps: 0,
-      weight: WeightScheme.Bodyweight,
-    })
+  let make = (~exercise: Workout.exercise, ~update: Workout.exercise => unit) => {
+    let (state, setState) = React.useState(() => exercise)
     let {movement, sets, reps, weight} = state
     <div id="exercise-adder">
       <MovementSelector
@@ -231,25 +226,9 @@ module ExerciseAdder = {
             weight,
           })
         }}>
-        {React.string("Add")}
+        {React.string("✓")}
       </button>
     </div>
-  }
-}
-
-type action = AddExercise(Workout.exercise) | DeleteExercise(int)
-let reducer = (state: Workout.plan, a: action) => {
-  open Workout
-  switch a {
-  | AddExercise(e) => {
-      exercise: [e]->Js.Array.concat(state.exercise),
-    }
-  | DeleteExercise(i) => {
-      let length = Js.Array2.length(state.exercise)
-      let prefix = state.exercise->Js.Array2.slice(~start=0, ~end_=i)
-      let suffix = state.exercise->Js.Array2.slice(~start=i + 1, ~end_=length)
-      {exercise: Js.Array2.concat(prefix, suffix)}
-    }
   }
 }
 
@@ -257,23 +236,50 @@ module Clipboard = {
   @val external write: string => Js.Promise.t<'a> = "navigator.clipboard.writeText"
 }
 
-@react.component
-let make = () => {
-  let (plan, dispatch) = React.useReducer(reducer, {exercise: []})
-  let copyToClipboard = plan => {
-    Clipboard.write(Workout.planToString(plan))
-    ->Promise.catch(err => {
-      Js.log(err)
-      Js.Promise.resolve()
-    })
-    ->ignore
+module WorkoutTracker = {
+  type action = AddExercise(Workout.exercise) | DeleteExercise(int)
+
+  let reducer = (state: Workout.plan, a: action) => {
+    open Workout
+    switch a {
+    | AddExercise(e) => {
+        exercise: [e]->Js.Array.concat(state.exercise),
+      }
+    | DeleteExercise(i) => {
+        let length = Js.Array2.length(state.exercise)
+        let prefix = state.exercise->Js.Array2.slice(~start=0, ~end_=i)
+        let suffix = state.exercise->Js.Array2.slice(~start=i + 1, ~end_=length)
+        {exercise: Js.Array2.concat(prefix, suffix)}
+      }
+    }
   }
-  <div>
-    <h1> {React.string("Workout tracker")} </h1>
-    <WorkoutComponent plan delete={i => dispatch(DeleteExercise(i))} />
-    <ExerciseAdder update={exercise => dispatch(AddExercise(exercise))} />
-    <div className="copiers">
-      <button onClick={_ => copyToClipboard(plan)}> {React.string("Copy to clipboard")} </button>
+
+  @react.component
+  let make = () => {
+    let (plan, dispatch) = React.useReducer(reducer, {exercise: []})
+    let copyToClipboard = plan => {
+      Clipboard.write(Workout.planToString(plan))
+      ->Promise.catch(err => {
+        Js.log(err)
+        Js.Promise.resolve()
+      })
+      ->ignore
+    }
+    let blankExercise: Workout.exercise = {
+      movement: Movement.Squat,
+      sets: 0,
+      reps: 0,
+      weight: WeightScheme.Weight(0, WeightScheme.Kg),
+    }
+    <div>
+      <h1> {React.string("Workout tracker")} </h1>
+      <WorkoutComponent plan delete={i => dispatch(DeleteExercise(i))} />
+      <ExerciseEditor
+        exercise={blankExercise} update={exercise => dispatch(AddExercise(exercise))}
+      />
+      <div className="copiers">
+        <button onClick={_ => copyToClipboard(plan)}> {React.string("Copy to clipboard")} </button>
+      </div>
     </div>
-  </div>
+  }
 }

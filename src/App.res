@@ -126,48 +126,39 @@ module InputNumberComponent = {
   }
 }
 
-module WorkoutComponent = {
-  @react.component
-  let make = (~plan: Workout.plan, ~delete: int => unit) => {
-    open Workout
-    <div className="exercise-display">
-      {React.array(
-        Belt.Array.mapWithIndex(plan.exercise, (i, e) => {
-          let {movement, sets, reps, weight} = e
-          <div key={Belt.Int.toString(i)}>
-            <span className="movement-display">
-              {React.string(StringUtils.capitalize(Movement.toString(movement)))}
-            </span>
-            <span className="scheme-display">
-              {React.string(Workout.loadToString(~sets, ~reps, ~weight))}
-            </span>
-            <button
-              onClick={e => {
-                ReactEvent.Mouse.preventDefault(e)
-                delete(i)
-              }}>
-              {React.string("✖")}
-            </button>
-          </div>
-        }),
-      )}
-    </div>
-  }
-}
-
 module WeightSelector = {
-  type weightUnit = [#Kg | #Lb | #Rpe]
+  type weightUnit = [#Kg | #Lb | #Rpe | #Amrap | #Bodyweight]
 
   let weightUnitToString = w =>
     switch w {
     | #Kg => "Kg"
     | #Lb => "Lb"
     | #Rpe => "RPE"
+    | #Amrap => "AMRAP"
+    | #Bodyweight => "Bodyweight"
+    }
+
+  let weightSchemeUnitToUnit = w =>
+    switch w {
+    | WeightScheme.Weight(_, WeightScheme.Kg) => #Kg
+    | WeightScheme.Weight(_, WeightScheme.Lb) => #Lb
+    | WeightScheme.Amrap => #Amrap
+    | WeightScheme.Rpe(_) => #Rpe
+    | WeightScheme.Bodyweight => #Bodyweight
+    }
+
+  let weightValue = w =>
+    switch w {
+    | WeightScheme.Weight(v, _) => v
+    | _ => 0
     }
 
   @react.component
-  let make = (~update: WeightScheme.scheme => unit) => {
-    let (state, setState) = React.useState(() => (#Kg, 0))
+  let make = (~weight: WeightScheme.scheme, ~update: WeightScheme.scheme => unit) => {
+    let (state, setState) = React.useState(() => (
+      weightSchemeUnitToUnit(weight),
+      weightValue(weight),
+    ))
     let (c, v) = state
     React.useEffect2(() => {
       update(
@@ -175,6 +166,8 @@ module WeightSelector = {
         | #Kg => WeightScheme.Weight(v, WeightScheme.Kg)
         | #Lb => WeightScheme.Weight(v, WeightScheme.Lb)
         | #Rpe => WeightScheme.Rpe(v)
+        | #Amrap => WeightScheme.Amrap
+        | #Bodyweight => WeightScheme.Bodyweight
         },
       )
       None
@@ -203,7 +196,7 @@ module ExerciseEditor = {
   let make = (~exercise: Workout.exercise, ~update: Workout.exercise => unit) => {
     let (state, setState) = React.useState(() => exercise)
     let {movement, sets, reps, weight} = state
-    <div id="exercise-adder">
+    <span className="exercise-adder">
       <MovementSelector
         value={movement} update={movement => setState(state => {...state, movement})}
       />
@@ -215,7 +208,7 @@ module ExerciseEditor = {
         {React.string("Reps: ")}
         <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
       </span>
-      <WeightSelector update={weight => setState(state => {...state, weight})} />
+      <WeightSelector weight update={weight => setState(state => {...state, weight})} />
       <button
         className="input"
         onClick={_ => {
@@ -228,6 +221,60 @@ module ExerciseEditor = {
         }}>
         {React.string("✓")}
       </button>
+    </span>
+  }
+}
+
+module WorkoutComponent = {
+  module IndexSet = Belt.Set.Int
+  @react.component
+  let make = (
+    ~plan: Workout.plan,
+    ~update: (int, Workout.exercise) => unit,
+    ~delete: int => unit,
+  ) => {
+    let (editing, setEditing) = React.useState(() => IndexSet.empty)
+    <div className="exercise-display">
+      {React.array(
+        Belt.Array.mapWithIndex(plan.exercise, (i, e) => {
+          let {movement, sets, reps, weight} = e
+          <div key={Belt.Int.toString(i)}>
+            {if IndexSet.has(editing, i) {
+              <ExerciseEditor
+                exercise={e}
+                update={exercise => {
+                  setEditing(ed => IndexSet.remove(ed, i))
+                  update(i, exercise)
+                }}
+              />
+            } else {
+              <span>
+                <span className="movement-display">
+                  {React.string(StringUtils.capitalize(Movement.toString(movement)))}
+                </span>
+                <span className="scheme-display">
+                  {React.string(Workout.loadToString(~sets, ~reps, ~weight))}
+                </span>
+                <button
+                  onClick={e => {
+                    ReactEvent.Mouse.preventDefault(e)
+                    setEditing(ed => IndexSet.add(ed, i))
+                  }}>
+                  {React.string("✎")}
+                </button>
+              </span>
+            }}
+            <button
+              onClick={e => {
+                ReactEvent.Mouse.preventDefault(e)
+                setEditing(ed => IndexSet.remove(ed, i))
+                delete(i)
+              }}>
+              {React.string("✖")}
+            </button>
+          </div>
+        }),
+      )}
     </div>
   }
 }
@@ -237,19 +284,28 @@ module Clipboard = {
 }
 
 module WorkoutTracker = {
-  type action = AddExercise(Workout.exercise) | DeleteExercise(int)
+  type action =
+    AddExercise(Workout.exercise) | DeleteExercise(int) | EditExercise(int, Workout.exercise)
 
   let reducer = (state: Workout.plan, a: action) => {
     open Workout
+    module Array = Js.Array2
     switch a {
     | AddExercise(e) => {
         exercise: [e]->Js.Array.concat(state.exercise),
       }
     | DeleteExercise(i) => {
-        let length = Js.Array2.length(state.exercise)
-        let prefix = state.exercise->Js.Array2.slice(~start=0, ~end_=i)
-        let suffix = state.exercise->Js.Array2.slice(~start=i + 1, ~end_=length)
-        {exercise: Js.Array2.concat(prefix, suffix)}
+        let length = Array.length(state.exercise)
+        let prefix = state.exercise->Array.slice(~start=0, ~end_=i)
+        let suffix = state.exercise->Array.slice(~start=i + 1, ~end_=length)
+        {exercise: Array.concat(prefix, suffix)}
+      }
+
+    | EditExercise(i, e) => {
+        let length = Array.length(state.exercise)
+        let prefix = state.exercise->Array.slice(~start=0, ~end_=i)
+        let suffix = state.exercise->Array.slice(~start=i + 1, ~end_=length)
+        {exercise: prefix->Array.concat([e])->Js.Array2.concat(suffix)}
       }
     }
   }
@@ -273,11 +329,17 @@ module WorkoutTracker = {
     }
     <div>
       <h1> {React.string("Workout tracker")} </h1>
-      <WorkoutComponent plan delete={i => dispatch(DeleteExercise(i))} />
-      <ExerciseEditor
-        exercise={blankExercise} update={exercise => dispatch(AddExercise(exercise))}
+      <WorkoutComponent
+        plan
+        delete={i => dispatch(DeleteExercise(i))}
+        update={(i, e) => dispatch(EditExercise(i, e))}
       />
-      <div className="copiers">
+      <div id="exercise-adder">
+        <ExerciseEditor
+          exercise={blankExercise} update={exercise => dispatch(AddExercise(exercise))}
+        />
+      </div>
+      <div id="copiers">
         <button onClick={_ => copyToClipboard(plan)}> {React.string("Copy to clipboard")} </button>
       </div>
     </div>

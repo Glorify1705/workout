@@ -6,7 +6,6 @@
 
 #root h1 {
     text-align: center;
-    border-bottom: 1px solid black;
 }
 
 #exercise-adder {
@@ -21,7 +20,7 @@ input[type="number"] {
     width: 4em;
 }
 
-.copiers {
+#copiers {
     margin-top: 1em;
     padding-top: 1em;
     border-top: 1px solid black;
@@ -30,4 +29,10 @@ input[type="number"] {
 
 .scheme-display {
     padding-left: 0.5em;
+}
+
+#exercise-adder {
+    margin-top: 1em;
+    padding-top: 1em;
+    border-top: 1px solid black;
 }

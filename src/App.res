@@ -256,6 +256,7 @@ module WorkoutComponent = {
                   {React.string(Workout.loadToString(~sets, ~reps, ~weight))}
                 </span>
                 <button
+                  className="edit-button"
                   onClick={e => {
                     ReactEvent.Mouse.preventDefault(e)
                     setEditing(ed => IndexSet.add(ed, i))
@@ -265,6 +266,7 @@ module WorkoutComponent = {
               </span>
             }}
             <button
+              className="delete-button"
               onClick={e => {
                 ReactEvent.Mouse.preventDefault(e)
                 setEditing(ed => IndexSet.remove(ed, i))

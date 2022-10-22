@@ -44,3 +44,8 @@ input[type="number"] {
 .delete-button {
     margin-left: 0.2em;
 }
+
+.workout-controls {
+    text-align: right;
+    margin-bottom: 1em;
+}

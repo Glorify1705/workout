@@ -11,12 +11,33 @@ module StringUtils = {
   }
 }
 
+module ArrayUtils = {
+  module Array = Js.Array2
+  let removeIndex = (arr: array<'t>, i: int) => {
+    let length = Array.length(arr)
+    let prefix = arr->Array.slice(~start=0, ~end_=i)
+    let suffix = arr->Array.slice(~start=i + 1, ~end_=length)
+    Array.concat(prefix, suffix)
+  }
+
+  let setIndex = (arr: array<'t>, i: int, v: 't) => {
+    let length = Array.length(arr)
+    let prefix = arr->Array.slice(~start=0, ~end_=i)
+    let suffix = arr->Array.slice(~start=i + 1, ~end_=length)
+    prefix->Array.concat([v])->Array.concat(suffix)
+  }
+}
+
 module DateUtils = {
   let toIso8861 = (d: Js.Date.t): string => {
     let day = Js.Date.getDate(d)
     let month = Js.Date.getMonth(d)
     let year = Js.Date.getFullYear(d)
     [year, month +. 1.0, day]->Js.Array2.map(Belt.Float.toInt)->Js.Array2.joinWith("-")
+  }
+
+  let fromIso8861 = (s: string): Js.Date.t => {
+    Js.Date.fromString(s)
   }
 }
 
@@ -250,26 +271,57 @@ module ExerciseEditor = {
 
 module WorkoutComponent = {
   module IndexSet = Belt.Set.Int
+
+  type state = {
+    workout: Workout.workout,
+    editing: IndexSet.t,
+  }
+
   @react.component
-  let make = (
-    ~workout: Workout.workout,
-    ~update: (int, Workout.exercise) => unit,
-    ~delete: int => unit,
-  ) => {
-    let (editing, setEditing) = React.useState(() => IndexSet.empty)
+  let make = (~workout: Workout.workout, ~update: Workout.workout => unit) => {
+    let (state, setState) = React.useState(() => {workout, editing: IndexSet.empty})
+
+    let blankExercise: Workout.exercise = {
+      movement: Movement.Squat,
+      sets: 0,
+      reps: 0,
+      weight: WeightScheme.Weight(0, WeightScheme.Kg),
+    }
+
+    React.useEffect1(() => {
+      update(state.workout)
+      None
+    }, [state.workout])
+
     <div className="workout-display">
-      <input type_="date" value={DateUtils.toIso8861(workout.date)} onChange={e => Js.log(e)} />
+      <input
+        type_="date"
+        value={DateUtils.toIso8861(workout.date)}
+        onChange={event => {
+          ReactEvent.Form.preventDefault(event)
+          let date = DateUtils.fromIso8861(ReactEvent.Form.target(event)["value"])
+          setState(s => {...s, workout: {...s.workout, date}})
+        }}
+      />
       <div className="exercise-display">
         {React.array(
           Belt.Array.mapWithIndex(workout.exercises, (i, e) => {
             let {movement, sets, reps, weight} = e
             <div key={Belt.Int.toString(i)}>
-              {if IndexSet.has(editing, i) {
+              {if IndexSet.has(state.editing, i) {
                 <ExerciseEditor
                   exercise={e}
                   update={exercise => {
-                    setEditing(ed => IndexSet.remove(ed, i))
-                    update(i, exercise)
+                    setState(state => {
+                      let exercises = workout.exercises
+                      {
+                        editing: IndexSet.remove(state.editing, i),
+                        workout: {
+                          ...state.workout,
+                          exercises: ArrayUtils.setIndex(exercises, i, exercise),
+                        },
+                      }
+                    })
                   }}
                 />
               } else {
@@ -284,7 +336,7 @@ module WorkoutComponent = {
                     className="edit-button"
                     onClick={e => {
                       ReactEvent.Mouse.preventDefault(e)
-                      setEditing(ed => IndexSet.add(ed, i))
+                      setState(state => {...state, editing: IndexSet.add(state.editing, i)})
                     }}>
                     {React.string("✎")}
                   </button>
@@ -294,14 +346,34 @@ module WorkoutComponent = {
                 className="delete-button"
                 onClick={e => {
                   ReactEvent.Mouse.preventDefault(e)
-                  setEditing(ed => IndexSet.remove(ed, i))
-                  delete(i)
+                  setState(state => {
+                    let exercises = workout.exercises
+                    {
+                      editing: IndexSet.remove(state.editing, i),
+                      workout: {...workout, exercises: ArrayUtils.removeIndex(exercises, i)},
+                    }
+                  })
                 }}>
                 {React.string("✖")}
               </button>
             </div>
           }),
         )}
+      </div>
+      <div id="exercise-adder">
+        <ExerciseEditor
+          exercise={blankExercise}
+          update={exercise =>
+            setState(state => {
+              {
+                ...state,
+                workout: {
+                  ...state.workout,
+                  exercises: state.workout.exercises->Js.Array2.concat([exercise]),
+                },
+              }
+            })}
+        />
       </div>
     </div>
   }
@@ -311,38 +383,12 @@ module Clipboard = {
   @val external write: string => Js.Promise.t<'a> = "navigator.clipboard.writeText"
 }
 
-module WorkoutTracker = {
-  type action =
-    AddExercise(Workout.exercise) | DeleteExercise(int) | EditExercise(int, Workout.exercise)
-
-  let reducer = (state: Workout.workout, a: action) => {
-    open Workout
-    module Array = Js.Array2
-
-    switch a {
-    | AddExercise(e) => {
-        ...state,
-        exercises: [e]->Js.Array.concat(state.exercises),
-      }
-    | DeleteExercise(i) => {
-        let length = Array.length(state.exercises)
-        let prefix = state.exercises->Array.slice(~start=0, ~end_=i)
-        let suffix = state.exercises->Array.slice(~start=i + 1, ~end_=length)
-        {...state, exercises: Array.concat(prefix, suffix)}
-      }
-
-    | EditExercise(i, e) => {
-        let length = Array.length(state.exercises)
-        let prefix = state.exercises->Array.slice(~start=0, ~end_=i)
-        let suffix = state.exercises->Array.slice(~start=i + 1, ~end_=length)
-        {...state, exercises: prefix->Array.concat([e])->Js.Array2.concat(suffix)}
-      }
-    }
-  }
-
+module App = {
   @react.component
   let make = (~workout) => {
-    let (workout, dispatch) = React.useReducer(reducer, {date: Js.Date.make(), exercises: []})
+    let blankWorkout: Workout.workout = {date: Js.Date.make(), exercises: []}
+    let blankState: Workout.plan = {workouts: [blankWorkout]}
+    let (state, setState) = React.useState(() => blankState)
     let copyToClipboard = plan => {
       Clipboard.write(Workout.workoutToString(plan))
       ->Promise.catch(err => {
@@ -351,33 +397,33 @@ module WorkoutTracker = {
       })
       ->ignore
     }
-    let blankExercise: Workout.exercise = {
-      movement: Movement.Squat,
-      sets: 0,
-      reps: 0,
-      weight: WeightScheme.Weight(0, WeightScheme.Kg),
-    }
     <div>
       <h1> {React.string("Workout Tracker")} </h1>
-      <WorkoutComponent
-        workout
-        delete={i => dispatch(DeleteExercise(i))}
-        update={(i, e) => dispatch(EditExercise(i, e))}
-      />
-      <div id="exercise-adder">
-        <ExerciseEditor
-          exercise={blankExercise} update={exercise => dispatch(AddExercise(exercise))}
-        />
-      </div>
-      <div id="copiers">
-        <button onClick={_ => copyToClipboard(workout)}>
-          {React.string("Copy to clipboard")}
+      <div className="workout-controls">
+        <button
+          className="input"
+          onClick={_ => {
+            setState(state => {workouts: state.workouts->Js.Array2.concat([blankWorkout])})
+          }}>
+          {React.string("Add Workout")}
         </button>
       </div>
+      {React.array(
+        Belt.Array.mapWithIndex(state.workouts, (i, w) => {
+          <div key={Belt.Int.toString(i)}>
+            <WorkoutComponent
+              workout={w}
+              update={workout =>
+                setState(state => {workouts: ArrayUtils.setIndex(state.workouts, i, workout)})}
+            />
+            <div id="copiers">
+              <button onClick={_ => copyToClipboard(workout)}>
+                {React.string("Copy to clipboard")}
+              </button>
+            </div>
+          </div>
+        }),
+      )}
     </div>
   }
-}
-
-module App = {
-  let make = WorkoutTracker.make
 }

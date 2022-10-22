@@ -358,7 +358,7 @@ module WorkoutTracker = {
       weight: WeightScheme.Weight(0, WeightScheme.Kg),
     }
     <div>
-      <h1> {React.string("Workout tracker")} </h1>
+      <h1> {React.string("Workout Tracker")} </h1>
       <WorkoutComponent
         workout
         delete={i => dispatch(DeleteExercise(i))}

@@ -113,7 +113,18 @@ module ExerciseEditor = {
     let {movement, sets, reps, weight} = state
     <span className="exercise-adder">
       <MovementSelector
-        value={movement} update={movement => setState(state => {...state, movement})}
+        value={movement}
+        update={movement => {
+          setState(state => {
+            ...state,
+            movement,
+            weight: if Movement.isWeighted(movement) {
+              weight
+            } else {
+              WeightScheme.Bodyweight
+            },
+          })
+        }}
       />
       <span className="input">
         {React.string("Sets: ")}
@@ -123,7 +134,11 @@ module ExerciseEditor = {
         {React.string("Reps: ")}
         <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
       </span>
-      <WeightSelector weight update={weight => setState(state => {...state, weight})} />
+      {if Movement.isWeighted(movement) {
+        <WeightSelector weight update={weight => setState(state => {...state, weight})} />
+      } else {
+        <span />
+      }}
       <button
         className="input"
         onClick={_ => {
@@ -136,6 +151,28 @@ module ExerciseEditor = {
         }}>
         {React.string("✓")}
       </button>
+    </span>
+  }
+}
+
+module ExerciseDisplay = {
+  @react.component
+  let make = (~exercise: Workout.exercise, ~previous: option<Workout.exercise>) => {
+    let {movement, sets, reps, weight} = exercise
+    let sameMovement = Belt.Option.mapWithDefault(previous, false, p =>
+      p.movement == exercise.movement
+    )
+    <span>
+      <span className="movement-display">
+        {if sameMovement {
+          React.string("")
+        } else {
+          {React.string(StringUtils.capitalize(Movement.toString(movement)))}
+        }}
+      </span>
+      <span className="scheme-display">
+        {React.string(Workout.loadToString(~sets, ~reps, ~weight))}
+      </span>
     </span>
   }
 }
@@ -167,7 +204,7 @@ module WorkoutComponent = {
     <div className="workout-display">
       <input
         type_="date"
-        value={DateUtils.toIso8861(workout.date)}
+        value={DateUtils.toIso8861(state.workout.date)}
         onChange={event => {
           ReactEvent.Form.preventDefault(event)
           let date = DateUtils.fromIso8861(ReactEvent.Form.target(event)["value"])
@@ -177,19 +214,17 @@ module WorkoutComponent = {
       <div className="exercise-display">
         {React.array(
           Belt.Array.mapWithIndex(workout.exercises, (i, e) => {
-            let {movement, sets, reps, weight} = e
             <div key={Belt.Int.toString(i)}>
               {if IndexSet.has(state.editing, i) {
                 <ExerciseEditor
                   exercise={e}
                   update={exercise => {
                     setState(state => {
-                      let exercises = workout.exercises
                       {
                         editing: IndexSet.remove(state.editing, i),
                         workout: {
                           ...state.workout,
-                          exercises: ArrayUtils.setIndex(exercises, i, exercise),
+                          exercises: ArrayUtils.setIndex(state.workout.exercises, i, exercise),
                         },
                       }
                     })
@@ -197,12 +232,14 @@ module WorkoutComponent = {
                 />
               } else {
                 <span>
-                  <span className="movement-display">
-                    {React.string(StringUtils.capitalize(Movement.toString(movement)))}
-                  </span>
-                  <span className="scheme-display">
-                    {React.string(Workout.loadToString(~sets, ~reps, ~weight))}
-                  </span>
+                  <ExerciseDisplay
+                    exercise={e}
+                    previous={if i > 0 {
+                      Some(state.workout.exercises[i - 1])
+                    } else {
+                      None
+                    }}
+                  />
                   <button
                     className="edit-button"
                     onClick={e => {
@@ -256,7 +293,7 @@ module Clipboard = {
 
 module App = {
   @react.component
-  let make = (~workout) => {
+  let make = () => {
     let blankWorkout: Workout.workout = {date: Js.Date.make(), exercises: []}
     let blankState: Workout.plan = {workouts: [blankWorkout]}
     let (state, setState) = React.useState(() => blankState)
@@ -288,7 +325,7 @@ module App = {
                 setState(state => {workouts: ArrayUtils.setIndex(state.workouts, i, workout)})}
             />
             <div id="copiers">
-              <button onClick={_ => copyToClipboard(workout)}>
+              <button onClick={_ => copyToClipboard(w)}>
                 {React.string("Copy to clipboard")}
               </button>
             </div>

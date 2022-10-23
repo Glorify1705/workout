@@ -24,6 +24,13 @@ module Movement = {
     | _ => None
     }
   }
+
+  let isWeighted = (m: movement) => {
+    switch m {
+    | Pullups => false
+    | _ => true
+    }
+  }
 }
 
 module WeightScheme = {
@@ -34,13 +41,14 @@ module WeightScheme = {
   let toString = (w: scheme) => {
     switch w {
     | Weight(weight, metric) =>
+      "@ " ++
       Belt.Int.toString(weight) ++
       switch metric {
       | Kg => "kg."
       | Lb => "lb."
       }
     | Amrap => "AMRAP"
-    | Rpe(rpe) => "RPE " ++ Belt.Int.toString(rpe)
+    | Rpe(rpe) => "@ RPE " ++ Belt.Int.toString(rpe)
     | Bodyweight => ""
     }
   }
@@ -66,7 +74,7 @@ module Workout = {
   }
 
   let loadToString = (~sets: int, ~reps: int, ~weight: WeightScheme.scheme) => {
-    setsToString(~sets, ~reps) ++ " @ " ++ WeightScheme.toString(weight)
+    setsToString(~sets, ~reps) ++ WeightScheme.toString(weight)
   }
 
   let exerciseToString = (e: exercise) => {

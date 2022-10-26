@@ -38,6 +38,60 @@ module WeightScheme = {
 
   type scheme = Weight(int, measure) | Amrap | Rpe(int) | Bodyweight
 
+  type schemeType = [#Kg | #Lb | #Rpe | #Amrap | #Bodyweight]
+
+  let schemeTypes: array<schemeType> = [#Kg, #Lb, #Rpe, #Amrap, #Bodyweight]
+
+  let schemeTypeToString = t =>
+    switch t {
+    | #Kg => "Kg"
+    | #Lb => "Lb"
+    | #Rpe => "RPE"
+    | #Amrap => "AMRAP"
+    | #Bodyweight => "Bodyweight"
+    }
+
+  let schemeToType = (s: scheme): schemeType => {
+    switch s {
+    | Weight(_, Kg) => #Kg
+    | Weight(_, Lb) => #Lb
+    | Amrap => #Amrap
+    | Rpe(_) => #Rpe
+    | Bodyweight => #Bodyweight
+    }
+  }
+
+  let applyType = (t: schemeType, s: scheme) => {
+    switch (s, t) {
+    | (Weight(v, Kg), #Kg) => Weight(v, Kg)
+    | (Weight(v, Kg), #Lb) => Weight(v, Lb)
+    | (Weight(v, Lb), #Lb) => Weight(v, Lb)
+    | (Weight(v, Lb), #Kg) => Weight(v, Kg)
+    | (Amrap, #Kg) => Weight(0, Kg)
+    | (Rpe(_), #Kg) => Weight(0, Kg)
+    | (Bodyweight, #Kg) => Weight(0, Kg)
+    | (Amrap, #Lb) => Weight(0, Lb)
+    | (Rpe(_), #Lb) => Weight(0, Lb)
+    | (Bodyweight, #Lb) => Weight(0, Lb)
+    | (Rpe(v), #Rpe) => Rpe(v)
+    | (Weight(_, _), #Rpe) => Rpe(0)
+    | (Amrap, #Rpe) => Rpe(0)
+    | (Bodyweight, #Rpe) => Rpe(0)
+    | (_, #Bodyweight) => Bodyweight
+    | (_, #Amrap) => Amrap
+    }
+  }
+
+  let applyMeasure = (w: int, s: scheme) => {
+    switch s {
+    | Weight(_, Kg) => Weight(w, Kg)
+    | Weight(_, Lb) => Weight(w, Lb)
+    | Amrap => Amrap
+    | Rpe(_) => Rpe(w)
+    | Bodyweight => Bodyweight
+    }
+  }
+
   let toString = (w: scheme) => {
     switch w {
     | Weight(weight, metric) =>
@@ -49,7 +103,7 @@ module WeightScheme = {
       }
     | Amrap => "AMRAP"
     | Rpe(rpe) => "@ RPE " ++ Belt.Int.toString(rpe)
-    | Bodyweight => ""
+    | Bodyweight => "Bodyweight"
     }
   }
 }

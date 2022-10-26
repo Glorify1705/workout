@@ -42,63 +42,41 @@ module InputNumberComponent = {
 }
 
 module WeightSelector = {
-  type weightUnit = [#Kg | #Lb | #Rpe | #Amrap | #Bodyweight]
-
-  let weightUnitToString = w =>
-    switch w {
-    | #Kg => "Kg"
-    | #Lb => "Lb"
-    | #Rpe => "RPE"
-    | #Amrap => "AMRAP"
-    | #Bodyweight => "Bodyweight"
-    }
-
-  let weightSchemeUnitToUnit = w =>
-    switch w {
-    | WeightScheme.Weight(_, WeightScheme.Kg) => #Kg
-    | WeightScheme.Weight(_, WeightScheme.Lb) => #Lb
-    | WeightScheme.Amrap => #Amrap
-    | WeightScheme.Rpe(_) => #Rpe
-    | WeightScheme.Bodyweight => #Bodyweight
-    }
-
-  let weightValue = w =>
-    switch w {
-    | WeightScheme.Weight(v, _) => v
-    | _ => 0
-    }
-
   @react.component
   let make = (~weight: WeightScheme.scheme, ~update: WeightScheme.scheme => unit) => {
-    let (state, setState) = React.useState(() => (
-      weightSchemeUnitToUnit(weight),
-      weightValue(weight),
-    ))
-    let (c, v) = state
-    React.useEffect2(() => {
-      update(
-        switch c {
-        | #Kg => WeightScheme.Weight(v, WeightScheme.Kg)
-        | #Lb => WeightScheme.Weight(v, WeightScheme.Lb)
-        | #Rpe => WeightScheme.Rpe(v)
-        | #Amrap => WeightScheme.Amrap
-        | #Bodyweight => WeightScheme.Bodyweight
-        },
-      )
+    let (state, setState) = React.useState(() => weight)
+    React.useEffect1(() => {
+      update(state)
       None
-    }, state)
-    let onChange = event => {
-      ReactEvent.Form.preventDefault(event)
-      let c = ReactEvent.Form.target(event)["value"]
-      setState(((_c, v)) => (c, v))
-    }
-    <span className="input">
-      <InputNumberComponent value={v} update={v => setState(((c, _v)) => (c, v))} />
-      <select value={weightUnitToString(c)} onChange>
+    }, [state])
+    <span className="weight-input">
+      {switch state {
+      | WeightScheme.Weight(v, WeightScheme.Kg) =>
+        <InputNumberComponent
+          value={v} update={nv => setState(s => WeightScheme.applyMeasure(nv, s))}
+        />
+      | WeightScheme.Weight(v, WeightScheme.Lb) =>
+        <InputNumberComponent
+          value={v} update={nv => setState(s => WeightScheme.applyMeasure(nv, s))}
+        />
+      | WeightScheme.Rpe(v) =>
+        <InputNumberComponent
+          value={v} update={nv => setState(s => WeightScheme.applyMeasure(nv, s))}
+        />
+      | _ => <span />
+      }}
+      <select
+        value={(WeightScheme.schemeToType(state) :> string)}
+        onChange={e => {
+          ReactEvent.Form.preventDefault(e)
+          let t = ReactEvent.Form.target(e)["value"]
+          setState(s => WeightScheme.applyType(t, s))
+        }}>
         {React.array(
-          [#Kg, #Lb, #Rpe]->Belt.Array.map(v => {
-            let val = weightUnitToString(v)
-            <option key={val} value={val}> {React.string(val)} </option>
+          WeightScheme.schemeTypes->Belt.Array.map(t => {
+            <option key={(t :> string)} value={(t :> string)}>
+              {React.string((t :> string))}
+            </option>
           }),
         )}
       </select>

@@ -155,6 +155,49 @@ module ExerciseDisplay = {
   }
 }
 
+module NotesComponent = {
+  type state = {editing: bool, notes: string}
+  @react.component
+  let make = (~initialNotes: string, ~update: string => unit) => {
+    let (state, setState) = React.useState(_ => {editing: false, notes: initialNotes})
+    let {editing, notes} = state
+
+    {
+      if !editing {
+        <div>
+          <pre> {React.string(notes)} </pre>
+          <button
+            className="edit-button"
+            onClick={e => {
+              ReactEvent.Mouse.preventDefault(e)
+              setState(s => {...s, editing: true})
+            }}>
+            {React.string("✎")}
+          </button>
+        </div>
+      } else {
+        <div>
+          <textarea
+            value={notes}
+            onChange={e => {
+              let notes = ReactEvent.Form.target(e)["value"]
+              setState(s => {...s, notes})
+            }}
+          />
+          <button
+            className="edit-button"
+            onClick={e => {
+              ReactEvent.Mouse.preventDefault(e)
+              setState(s => {...s, editing: false})
+            }}>
+            {React.string("✓")}
+          </button>
+        </div>
+      }
+    }
+  }
+}
+
 module WorkoutComponent = {
   module IndexSet = Belt.Set.Int
 
@@ -246,6 +289,10 @@ module WorkoutComponent = {
           }),
         )}
       </div>
+      <NotesComponent
+        initialNotes={workout.notes}
+        update={notes => setState(state => {...state, workout: {...state.workout, notes}})}
+      />
       <div id="exercise-adder">
         <ExerciseEditor
           exercise={blankExercise}
@@ -269,11 +316,26 @@ module Clipboard = {
   @val external write: string => Js.Promise.t<'a> = "navigator.clipboard.writeText"
 }
 
+let testState: Workout.workout = {
+  date: Js.Date.make(),
+  exercises: [
+    {movement: Movement.Squat, sets: 5, reps: 5, weight: WeightScheme.Weight(100, WeightScheme.Kg)},
+    {
+      movement: Movement.Deadlift,
+      sets: 5,
+      reps: 5,
+      weight: WeightScheme.Weight(140, WeightScheme.Kg),
+    },
+    {movement: Movement.Pullups, sets: 5, reps: 8, weight: WeightScheme.Bodyweight},
+  ],
+  notes: "Very challenging but fun workout!",
+}
+
 module App = {
   @react.component
   let make = () => {
-    let blankWorkout: Workout.workout = {date: Js.Date.make(), exercises: []}
-    let blankState: Workout.plan = {workouts: [blankWorkout]}
+    let blankWorkout: Workout.workout = {date: Js.Date.make(), exercises: [], notes: ""}
+    let blankState: Workout.plan = {workouts: [testState]}
     let (state, setState) = React.useState(() => blankState)
     let copyToClipboard = plan => {
       Clipboard.write(Workout.workoutToString(plan))

@@ -119,6 +119,7 @@ module Workout = {
   type workout = {
     date: Js.Date.t,
     exercises: array<exercise>,
+    notes: string,
   }
 
   type plan = {workouts: array<workout>}

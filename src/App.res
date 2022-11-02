@@ -355,20 +355,32 @@ module App = {
           }}>
           {React.string("Add Workout")}
         </button>
+        <button
+          className="input"
+          onClick={_ => {
+            let now = Js.Date.make()
+            Js.Array2.forEach(state.workouts, w => {
+              if DateUtils.sameDate(w.date, now) {
+                copyToClipboard(w)
+              }
+            })
+          }}>
+          {React.string("Copy current workout")}
+        </button>
       </div>
       {React.array(
         Belt.Array.mapWithIndex(state.workouts, (i, w) => {
           <div key={Belt.Int.toString(i)}>
-            <WorkoutComponent
-              workout={w}
-              update={workout =>
-                setState(state => {workouts: ArrayUtils.setIndex(state.workouts, i, workout)})}
-            />
             <div id="copiers">
               <button onClick={_ => copyToClipboard(w)}>
                 {React.string("Copy to clipboard")}
               </button>
             </div>
+            <WorkoutComponent
+              workout={w}
+              update={workout =>
+                setState(state => {workouts: ArrayUtils.setIndex(state.workouts, i, workout)})}
+            />
           </div>
         }),
       )}

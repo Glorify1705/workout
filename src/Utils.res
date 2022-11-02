@@ -30,13 +30,15 @@ module ArrayUtils = {
 
 module DateUtils = {
   let toIso8861 = (d: Js.Date.t): string => {
-    let day = Js.Date.getDate(d)
-    let month = Js.Date.getMonth(d)
-    let year = Js.Date.getFullYear(d)
-    [year, month +. 1.0, day]->Js.Array2.map(Belt.Float.toInt)->Js.Array2.joinWith("-")
+    let s = Js.Date.toISOString(d)
+    Js.String2.slice(s, ~from=0, ~to_=Js.String2.indexOf(s, "T"))
   }
 
   let fromIso8861 = (s: string): Js.Date.t => {
     Js.Date.fromString(s)
+  }
+
+  let sameDate = (lhs: Js.Date.t, rhs: Js.Date.t) => {
+    toIso8861(lhs) == toIso8861(rhs)
   }
 }

@@ -122,7 +122,7 @@ module Workout = {
     notes: string,
   }
 
-  type plan = {workouts: array<workout>}
+  type plan = {workouts: Js.Dict.t<workout>}
 
   let setsToString = (~sets: int, ~reps: int) => {
     Belt.Int.toString(sets) ++ "x" ++ Belt.Int.toString(reps)
@@ -144,9 +144,5 @@ module Workout = {
     DateUtils.toIso8861(w.date) ++
     "\n----------------\n" ++
     Belt.Array.joinWith(w.exercises, "\n", exerciseToString)
-  }
-
-  let planToString = (p: plan) => {
-    Belt.Array.joinWith(p.workouts, "\n", workoutToString)
   }
 }

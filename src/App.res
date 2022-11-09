@@ -161,6 +161,10 @@ module NotesComponent = {
   let make = (~initialNotes: string, ~update: string => unit) => {
     let (state, setState) = React.useState(_ => {editing: false, notes: initialNotes})
     let {editing, notes} = state
+    React.useEffect1(() => {
+      update(state.notes)
+      None
+    }, [state])
 
     {
       if !editing {
@@ -335,7 +339,9 @@ module App = {
   @react.component
   let make = () => {
     let blankWorkout: Workout.workout = {date: Js.Date.make(), exercises: [], notes: ""}
-    let blankState: Workout.plan = {workouts: [testState]}
+    let blankState: Workout.plan = {
+      workouts: Js.Dict.fromArray([(DateUtils.toIso8861(testState.date), testState)]),
+    }
     let (state, setState) = React.useState(() => blankState)
     let copyToClipboard = plan => {
       Clipboard.write(Workout.workoutToString(plan))
@@ -351,7 +357,11 @@ module App = {
         <button
           className="input"
           onClick={_ => {
-            setState(state => {workouts: state.workouts->Js.Array2.concat([blankWorkout])})
+            setState(s => {
+              Js.log2(s, DateUtils.toIso8861(Js.Date.make()))
+              Js.Dict.set(s.workouts, DateUtils.toIso8861(Js.Date.make()), blankWorkout)
+              s
+            })
           }}>
           {React.string("Add Workout")}
         </button>
@@ -359,31 +369,37 @@ module App = {
           className="input"
           onClick={_ => {
             let now = Js.Date.make()
-            Js.Array2.forEach(state.workouts, w => {
-              if DateUtils.sameDate(w.date, now) {
-                copyToClipboard(w)
-              }
-            })
+            switch Js.Dict.get(state.workouts, DateUtils.toIso8861(now)) {
+            | Some(w) => copyToClipboard(w)
+            }
           }}>
           {React.string("Copy current workout")}
         </button>
       </div>
-      {React.array(
-        Belt.Array.mapWithIndex(state.workouts, (i, w) => {
-          <div key={Belt.Int.toString(i)}>
-            <div id="copiers">
-              <button onClick={_ => copyToClipboard(w)}>
-                {React.string("Copy to clipboard")}
-              </button>
+      {
+        let entries = Js.Array2.sortInPlace(Js.Dict.entries(state.workouts))
+        React.array(
+          Belt.Array.map(entries, ((d, w)) => {
+            <div key={d}>
+              <div id="copiers">
+                <button onClick={_ => copyToClipboard(w)}>
+                  {React.string("Copy to clipboard")}
+                </button>
+              </div>
+              <WorkoutComponent
+                workout={w}
+                update={workout => {
+                  setState(s => {
+                    Js.Dict.unsafeDeleteKey(. s.workouts, d)
+                    Js.Dict.set(s.workouts, DateUtils.toIso8861(workout.date), workout)
+                    s
+                  })
+                }}
+              />
             </div>
-            <WorkoutComponent
-              workout={w}
-              update={workout =>
-                setState(state => {workouts: ArrayUtils.setIndex(state.workouts, i, workout)})}
-            />
-          </div>
-        }),
-      )}
+          }),
+        )
+      }
     </div>
   }
 }

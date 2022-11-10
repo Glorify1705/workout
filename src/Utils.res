@@ -26,6 +26,10 @@ module ArrayUtils = {
     let suffix = arr->Array.slice(~start=i + 1, ~end_=length)
     prefix->Array.concat([v])->Array.concat(suffix)
   }
+
+  let pushBack = (arr: array<'t>, v: 't) => {
+    Array.concat(arr, [v])
+  }
 }
 
 module DateUtils = {
@@ -51,4 +55,6 @@ module DateUtils = {
       0
     }
   }
+
+  let now = (): Js.Date.t => Js.Date.make()
 }

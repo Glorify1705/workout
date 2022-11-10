@@ -122,7 +122,9 @@ module Workout = {
     notes: string,
   }
 
-  type plan = {workouts: Js.Dict.t<workout>}
+  let emptyWorkout = () => {date: DateUtils.now(), exercises: [], notes: ""}
+
+  type plan = {workouts: array<workout>}
 
   let setsToString = (~sets: int, ~reps: int) => {
     Belt.Int.toString(sets) ++ "x" ++ Belt.Int.toString(reps)
@@ -144,5 +146,31 @@ module Workout = {
     DateUtils.toIso8861(w.date) ++
     "\n----------------\n" ++
     Belt.Array.joinWith(w.exercises, "\n", exerciseToString)
+  }
+
+  let addWorkout = (p: plan, w: workout) => {
+    let result = {workouts: ArrayUtils.pushBack(p.workouts, w)}
+    Js.Array2.sortInPlace(result.workouts)->ignore
+    result
+  }
+
+  let removeWorkout = (p: plan, d: Js.Date.t) => {
+    let notOnDate = w => w.date != d
+    {workouts: Js.Array2.filter(p.workouts, notOnDate)}
+  }
+
+  let editWorkout = (p: plan, d: Js.Date.t, w: workout): plan => {
+    let i = Js.Array2.findIndex(p.workouts, w => DateUtils.sameDate(w.date, d))
+    if i == -1 {
+      p
+    } else {
+      let result = {workouts: ArrayUtils.setIndex(p.workouts, i, w)}
+      Js.Array2.sortInPlace(result.workouts)->ignore
+      result
+    }
+  }
+
+  let getWorkout = (p: plan, d: Js.Date.t): option<workout> => {
+    Js.Array2.find(p.workouts, w => DateUtils.sameDate(w.date, d))
   }
 }

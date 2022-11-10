@@ -321,7 +321,7 @@ module Clipboard = {
 }
 
 let testState: Workout.workout = {
-  date: Js.Date.make(),
+  date: DateUtils.now(),
   exercises: [
     {movement: Movement.Squat, sets: 5, reps: 5, weight: WeightScheme.Weight(100, WeightScheme.Kg)},
     {
@@ -335,71 +335,65 @@ let testState: Workout.workout = {
   notes: "Very challenging but fun workout!",
 }
 
+let copyToClipboard = plan => {
+  Clipboard.write(Workout.workoutToString(plan))
+  ->Promise.catch(err => {
+    Js.log(err)
+    Js.Promise.resolve()
+  })
+  ->ignore
+}
+
 module App = {
   @react.component
   let make = () => {
-    let blankWorkout: Workout.workout = {date: Js.Date.make(), exercises: [], notes: ""}
-    let blankState: Workout.plan = {
-      workouts: Js.Dict.fromArray([(DateUtils.toIso8861(testState.date), testState)]),
-    }
+    let blankState: Workout.plan = {workouts: [testState]}
     let (state, setState) = React.useState(() => blankState)
-    let copyToClipboard = plan => {
-      Clipboard.write(Workout.workoutToString(plan))
-      ->Promise.catch(err => {
-        Js.log(err)
-        Js.Promise.resolve()
-      })
-      ->ignore
-    }
     <div>
       <h1> {React.string("Workout Tracker")} </h1>
       <div className="workout-controls">
         <button
           className="input"
-          onClick={_ => {
+          onClick={_ =>
             setState(s => {
-              Js.log2(s, DateUtils.toIso8861(Js.Date.make()))
-              Js.Dict.set(s.workouts, DateUtils.toIso8861(Js.Date.make()), blankWorkout)
-              s
-            })
-          }}>
+              if Belt.Option.isNone(Workout.getWorkout(s, DateUtils.now())) {
+                Workout.addWorkout(s, Workout.emptyWorkout())
+              } else {
+                s
+              }
+            })}>
           {React.string("Add Workout")}
         </button>
         <button
           className="input"
           onClick={_ => {
-            let now = Js.Date.make()
-            switch Js.Dict.get(state.workouts, DateUtils.toIso8861(now)) {
-            | Some(w) => copyToClipboard(w)
+            let workout = Workout.getWorkout(state, DateUtils.now())
+            if Belt.Option.isSome(workout) {
+              copyToClipboard(Belt.Option.getUnsafe(workout))
             }
           }}>
           {React.string("Copy current workout")}
         </button>
       </div>
-      {
-        let entries = Js.Array2.sortInPlace(Js.Dict.entries(state.workouts))
-        React.array(
-          Belt.Array.map(entries, ((d, w)) => {
-            <div key={d}>
-              <div id="copiers">
-                <button onClick={_ => copyToClipboard(w)}>
-                  {React.string("Copy to clipboard")}
-                </button>
-              </div>
-              <WorkoutComponent
-                workout={w}
-                update={workout => {
-                  setState(s => {
-                    Js.Dict.unsafeDeleteKey(. s.workouts, d)
-                    Js.Dict.set(s.workouts, DateUtils.toIso8861(workout.date), workout)
-                    s
-                  })
-                }}
-              />
+      {React.array(
+        Belt.Array.map(state.workouts, w => {
+          <div key={DateUtils.toIso8861(w.date)}>
+            <div id="copiers">
+              <button onClick={_ => copyToClipboard(w)}>
+                {React.string("Copy to clipboard")}
+              </button>
             </div>
-          }),
-        )
-      }
+            <WorkoutComponent
+              workout={w}
+              update={workout => {
+                setState(s => {
+                  Workout.editWorkout(s, w.date, workout)
+                })
+              }}
+            />
+          </div>
+        }),
+      )}
     </div>
   }
 }

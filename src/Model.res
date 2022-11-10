@@ -155,8 +155,7 @@ module Workout = {
   }
 
   let removeWorkout = (p: plan, d: Js.Date.t) => {
-    let notOnDate = w => w.date != d
-    {workouts: Js.Array2.filter(p.workouts, notOnDate)}
+    {workouts: Js.Array2.filter(p.workouts, w => w.date != d)}
   }
 
   let editWorkout = (p: plan, d: Js.Date.t, w: workout): plan => {

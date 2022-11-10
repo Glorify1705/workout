@@ -48,3 +48,16 @@ module DateUtils = {
 
   let now = (): Js.Date.t => Js.Date.make()
 }
+
+module ClipboardUtils = {
+  @val external write: string => Js.Promise.t<'a> = "navigator.clipboard.writeText"
+
+  let copy = (s: string) => {
+    write(s)
+    ->Promise.catch(err => {
+      Js.log(err)
+      Js.Promise.resolve()
+    })
+    ->ignore
+  }
+}

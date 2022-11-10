@@ -227,15 +227,20 @@ module WorkoutComponent = {
     }, [state.workout])
 
     <div className="workout-display">
-      <input
-        type_="date"
-        value={DateUtils.toIso8861(state.workout.date)}
-        onChange={event => {
-          ReactEvent.Form.preventDefault(event)
-          let date = DateUtils.fromIso8861(ReactEvent.Form.target(event)["value"])
-          setState(s => {...s, workout: {...s.workout, date}})
-        }}
-      />
+      <div id="workout-display-top">
+        <input
+          type_="date"
+          value={DateUtils.toIso8861(state.workout.date)}
+          onChange={event => {
+            ReactEvent.Form.preventDefault(event)
+            let date = DateUtils.fromIso8861(ReactEvent.Form.target(event)["value"])
+            setState(s => {...s, workout: {...s.workout, date}})
+          }}
+        />
+        <button onClick={_ => ClipboardUtils.copy(Workout.workoutToString(state.workout))}>
+          {React.string("Copy to clipboard")}
+        </button>
+      </div>
       <div className="exercise-display">
         {React.array(
           Belt.Array.mapWithIndex(workout.exercises, (i, e) => {
@@ -316,10 +321,6 @@ module WorkoutComponent = {
   }
 }
 
-module Clipboard = {
-  @val external write: string => Js.Promise.t<'a> = "navigator.clipboard.writeText"
-}
-
 let testState: Workout.workout = {
   date: DateUtils.now(),
   exercises: [
@@ -333,15 +334,6 @@ let testState: Workout.workout = {
     {movement: Movement.Pullups, sets: 5, reps: 8, weight: WeightScheme.Bodyweight},
   ],
   notes: "Very challenging but fun workout!",
-}
-
-let copyToClipboard = plan => {
-  Clipboard.write(Workout.workoutToString(plan))
-  ->Promise.catch(err => {
-    Js.log(err)
-    Js.Promise.resolve()
-  })
-  ->ignore
 }
 
 module App = {
@@ -369,7 +361,7 @@ module App = {
           onClick={_ => {
             let workout = Workout.getWorkout(state, DateUtils.now())
             if Belt.Option.isSome(workout) {
-              copyToClipboard(Belt.Option.getUnsafe(workout))
+              ClipboardUtils.copy(Belt.Option.getUnsafe(workout)->Workout.workoutToString)
             }
           }}>
           {React.string("Copy current workout")}
@@ -378,11 +370,6 @@ module App = {
       {React.array(
         Belt.Array.map(state.workouts, w => {
           <div key={DateUtils.toIso8861(w.date)}>
-            <div id="copiers">
-              <button onClick={_ => copyToClipboard(w)}>
-                {React.string("Copy to clipboard")}
-              </button>
-            </div>
             <WorkoutComponent
               workout={w}
               update={workout => {

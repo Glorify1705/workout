@@ -46,15 +46,5 @@ module DateUtils = {
     toIso8861(lhs) == toIso8861(rhs)
   }
 
-  let compareDates = (lhs: Js.Date.t, rhs: Js.Date.t): int => {
-    if lhs > rhs {
-      1
-    } else if lhs < rhs {
-      -1
-    } else {
-      0
-    }
-  }
-
   let now = (): Js.Date.t => Js.Date.make()
 }

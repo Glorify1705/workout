@@ -165,7 +165,9 @@ module Workout = {
       p
     } else {
       let result = {workouts: ArrayUtils.setIndex(p.workouts, i, w)}
-      Js.Array2.sortInPlace(result.workouts)->ignore
+      Js.Array2.sortInPlaceWith(result.workouts, (l, r) =>
+        Belt.Float.toInt(Js.Date.getSeconds(r.date) -. Js.Date.getSeconds(l.date))
+      )->ignore
       result
     }
   }

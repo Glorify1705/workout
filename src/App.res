@@ -379,7 +379,7 @@ module App = {
               ClipboardUtils.copy(Belt.Option.getUnsafe(workout)->Workout.workoutToString)
             }
           }}>
-          {React.string("Copy current workout")}
+          {React.string("Copy today's workout")}
         </button>
       </div>
       {React.array(

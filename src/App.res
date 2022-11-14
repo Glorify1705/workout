@@ -202,6 +202,26 @@ module NotesComponent = {
   }
 }
 
+module DateComponent = {
+  @react.component
+  let make = (~date: Js.Date.t, ~update: Js.Date.t => unit) => {
+    let (state, setState) = React.useState(_ => date)
+    React.useEffect1(() => {
+      update(state)
+      None
+    }, [state])
+    <input
+      type_="date"
+      value={DateUtils.toIso8861(state)}
+      onChange={event => {
+        ReactEvent.Form.preventDefault(event)
+        let d = DateUtils.fromIso8861(ReactEvent.Form.target(event)["value"])
+        setState(_ => d)
+      }}
+    />
+  }
+}
+
 module WorkoutComponent = {
   module IndexSet = Belt.Set.Int
 
@@ -228,14 +248,9 @@ module WorkoutComponent = {
 
     <div className="workout-display">
       <div id="workout-display-top">
-        <input
-          type_="date"
-          value={DateUtils.toIso8861(state.workout.date)}
-          onChange={event => {
-            ReactEvent.Form.preventDefault(event)
-            let date = DateUtils.fromIso8861(ReactEvent.Form.target(event)["value"])
-            setState(s => {...s, workout: {...s.workout, date}})
-          }}
+        <DateComponent
+          date={state.workout.date}
+          update={date => setState(s => {...s, workout: {...s.workout, date}})}
         />
         <button onClick={_ => ClipboardUtils.copy(Workout.workoutToString(state.workout))}>
           {React.string("Copy to clipboard")}

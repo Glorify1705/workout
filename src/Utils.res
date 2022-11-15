@@ -47,6 +47,12 @@ module DateUtils = {
   }
 
   let now = (): Js.Date.t => Js.Date.make()
+
+  let dayBefore = (d: Js.Date.t) => {
+    let result = d
+    Js.Date.setDate(result, Js.Date.getDate(d) -. 1.)->ignore
+    result
+  }
 }
 
 module ClipboardUtils = {

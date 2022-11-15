@@ -336,25 +336,50 @@ module WorkoutComponent = {
   }
 }
 
-let testState: Workout.workout = {
-  date: DateUtils.now(),
-  exercises: [
-    {movement: Movement.Squat, sets: 5, reps: 5, weight: WeightScheme.Weight(100, WeightScheme.Kg)},
-    {
-      movement: Movement.Deadlift,
-      sets: 5,
-      reps: 5,
-      weight: WeightScheme.Weight(140, WeightScheme.Kg),
-    },
-    {movement: Movement.Pullups, sets: 5, reps: 8, weight: WeightScheme.Bodyweight},
-  ],
-  notes: "Very challenging but fun workout!",
-}
+let testState: array<Workout.workout> = [
+  {
+    date: DateUtils.dayBefore(DateUtils.now()),
+    exercises: [
+      {
+        movement: Movement.Bench,
+        sets: 5,
+        reps: 5,
+        weight: WeightScheme.Weight(80, WeightScheme.Kg),
+      },
+      {
+        movement: Movement.BarbellRows,
+        sets: 4,
+        reps: 8,
+        weight: WeightScheme.Weight(80, WeightScheme.Kg),
+      },
+    ],
+    notes: "Upper body workout",
+  },
+  {
+    date: DateUtils.now(),
+    exercises: [
+      {
+        movement: Movement.Squat,
+        sets: 5,
+        reps: 5,
+        weight: WeightScheme.Weight(100, WeightScheme.Kg),
+      },
+      {
+        movement: Movement.Deadlift,
+        sets: 5,
+        reps: 5,
+        weight: WeightScheme.Weight(140, WeightScheme.Kg),
+      },
+      {movement: Movement.Pullups, sets: 5, reps: 8, weight: WeightScheme.Bodyweight},
+    ],
+    notes: "Lower body workout",
+  },
+]
 
 module App = {
   @react.component
   let make = () => {
-    let blankState: Workout.plan = {workouts: [testState]}
+    let blankState: Workout.plan = {workouts: testState}
     let (state, setState) = React.useState(() => blankState)
     <div>
       <h1> {React.string("Workout Tracker")} </h1>

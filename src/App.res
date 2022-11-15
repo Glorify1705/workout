@@ -85,51 +85,103 @@ module WeightSelector = {
 }
 
 module ExerciseEditor = {
+  type mode = Editor | Adder
+
   @react.component
-  let make = (~exercise: Workout.exercise, ~update: Workout.exercise => unit) => {
+  let make = (~exercise: Workout.exercise, ~update: Workout.exercise => unit, ~mode: mode) => {
     let (state, setState) = React.useState(() => exercise)
     let {movement, sets, reps, weight} = state
-    <span className="exercise-adder">
-      <MovementSelector
-        value={movement}
-        update={movement => {
-          setState(state => {
-            ...state,
-            movement,
-            weight: if Movement.isWeighted(movement) {
-              weight
-            } else {
-              WeightScheme.Bodyweight
-            },
-          })
+    switch mode {
+    | Editor =>
+      <>
+        <td>
+          <MovementSelector
+            value={movement}
+            update={movement => {
+              setState(state => {
+                ...state,
+                movement,
+                weight: if Movement.isWeighted(movement) {
+                  weight
+                } else {
+                  WeightScheme.Bodyweight
+                },
+              })
+            }}
+          />
+        </td>
+        <td>
+          <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
+        </td>
+        <td>
+          <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
+        </td>
+        {if Movement.isWeighted(movement) {
+          <td>
+            <WeightSelector weight update={weight => setState(state => {...state, weight})} />
+          </td>
+        } else {
+          <td />
         }}
-      />
-      <span className="input">
-        {React.string("Sets: ")}
-        <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
+        <td className="exercise-controls">
+          <button
+            className="input"
+            onClick={_ => {
+              update({
+                movement,
+                sets,
+                reps,
+                weight,
+              })
+            }}>
+            {React.string("✓")}
+          </button>
+        </td>
+      </>
+
+    | Adder =>
+      <span className="exercise-adder">
+        <MovementSelector
+          value={movement}
+          update={movement => {
+            setState(state => {
+              ...state,
+              movement,
+              weight: if Movement.isWeighted(movement) {
+                weight
+              } else {
+                WeightScheme.Bodyweight
+              },
+            })
+          }}
+        />
+        <span className="input">
+          {React.string("Sets: ")}
+          <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
+        </span>
+        <span className="input">
+          {React.string("Reps: ")}
+          <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
+        </span>
+        {if Movement.isWeighted(movement) {
+          <WeightSelector weight update={weight => setState(state => {...state, weight})} />
+        } else {
+          <span />
+        }}
+        <button
+          className="input"
+          onClick={_ => {
+            update({
+              movement,
+              sets,
+              reps,
+              weight,
+            })
+          }}>
+          {React.string("✓")}
+        </button>
       </span>
-      <span className="input">
-        {React.string("Reps: ")}
-        <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
-      </span>
-      {if Movement.isWeighted(movement) {
-        <WeightSelector weight update={weight => setState(state => {...state, weight})} />
-      } else {
-        <span />
-      }}
-      <button
-        className="input"
-        onClick={_ => {
-          update({
-            movement,
-            sets,
-            reps,
-            weight,
-          })
-        }}>
-        {React.string("✓")}
-      </button>
-    </span>
+    }
   }
 }
 
@@ -140,18 +192,18 @@ module ExerciseDisplay = {
     let sameMovement = Belt.Option.mapWithDefault(previous, false, p =>
       p.movement == exercise.movement
     )
-    <span>
-      <span className="movement-display">
+    <>
+      <td className="movement-display">
         {if sameMovement {
           React.string("")
         } else {
           {React.string(StringUtils.capitalize(Movement.toString(movement)))}
         }}
-      </span>
-      <span className="scheme-display">
-        {React.string(Workout.loadToString(~sets, ~reps, ~weight))}
-      </span>
-    </span>
+      </td>
+      <td> {React.string(Belt.Int.toString(sets))} </td>
+      <td> {React.string(Belt.Int.toString(reps))} </td>
+      <td> {React.string(WeightScheme.toString(weight))} </td>
+    </>
   }
 }
 
@@ -233,7 +285,12 @@ module WorkoutComponent = {
   }
 
   @react.component
-  let make = (~workout: Workout.workout, ~update: Workout.workout => unit) => {
+  let make = (
+    ~workout: Workout.workout,
+    ~update: Workout.workout => unit,
+    ~delete: Workout.workout => unit,
+    ~duplicate: Workout.workout => unit,
+  ) => {
     let (state, setState) = React.useState(() => {workout, editing: IndexSet.empty})
 
     let blankExercise: Workout.exercise = {
@@ -257,70 +314,90 @@ module WorkoutComponent = {
         <button onClick={_ => ClipboardUtils.copy(Workout.workoutToString(state.workout))}>
           {React.string("Copy to clipboard")}
         </button>
+        <button onClick={_ => duplicate(state.workout)}> {React.string("Duplicate")} </button>
+        <button onClick={_ => delete(state.workout)}> {React.string("✖")} </button>
       </div>
-      <div className="exercise-display">
-        {React.array(
-          Belt.Array.mapWithIndex(workout.exercises, (i, e) => {
-            <div key={Belt.Int.toString(i)}>
-              {if IndexSet.has(state.editing, i) {
-                <ExerciseEditor
-                  exercise={e}
-                  update={exercise => {
-                    setState(state => {
-                      {
-                        editing: IndexSet.remove(state.editing, i),
-                        workout: {
-                          ...state.workout,
-                          exercises: ArrayUtils.setIndex(state.workout.exercises, i, exercise),
-                        },
-                      }
-                    })
-                  }}
-                />
-              } else {
-                <span>
-                  <ExerciseDisplay
+      <table className="exercise-display">
+        <thead>
+          <tr>
+            <th> {React.string("Exercise")} </th>
+            <th> {React.string("Sets")} </th>
+            <th> {React.string("Reps")} </th>
+            <th> {React.string("Loading")} </th>
+            <th className="exercise-control-header"> {React.string("Edit")} </th>
+          </tr>
+        </thead>
+        <tbody>
+          {React.array(
+            Belt.Array.mapWithIndex(workout.exercises, (i, e) => {
+              <tr key={Belt.Int.toString(i)}>
+                {if IndexSet.has(state.editing, i) {
+                  <ExerciseEditor
+                    mode=ExerciseEditor.Editor
                     exercise={e}
-                    previous={if i > 0 {
-                      Some(state.workout.exercises[i - 1])
-                    } else {
-                      None
+                    update={exercise => {
+                      setState(state => {
+                        {
+                          editing: IndexSet.remove(state.editing, i),
+                          workout: {
+                            ...state.workout,
+                            exercises: ArrayUtils.setIndex(state.workout.exercises, i, exercise),
+                          },
+                        }
+                      })
                     }}
                   />
-                  <button
-                    className="edit-button"
-                    onClick={e => {
-                      ReactEvent.Mouse.preventDefault(e)
-                      setState(state => {...state, editing: IndexSet.add(state.editing, i)})
-                    }}>
-                    {React.string("✎")}
-                  </button>
-                </span>
-              }}
-              <button
-                className="delete-button"
-                onClick={e => {
-                  ReactEvent.Mouse.preventDefault(e)
-                  setState(state => {
-                    let exercises = workout.exercises
-                    {
-                      editing: IndexSet.remove(state.editing, i),
-                      workout: {...workout, exercises: ArrayUtils.removeIndex(exercises, i)},
-                    }
-                  })
-                }}>
-                {React.string("✖")}
-              </button>
-            </div>
-          }),
-        )}
-      </div>
+                } else {
+                  <>
+                    <ExerciseDisplay
+                      exercise={e}
+                      previous={if i > 0 {
+                        Some(state.workout.exercises[i - 1])
+                      } else {
+                        None
+                      }}
+                    />
+                    <td className="exercise-controls">
+                      <button
+                        className="edit-button"
+                        onClick={e => {
+                          ReactEvent.Mouse.preventDefault(e)
+                          setState(state => {...state, editing: IndexSet.add(state.editing, i)})
+                        }}>
+                        {React.string("✎")}
+                      </button>
+                      <button
+                        className="delete-button"
+                        onClick={e => {
+                          ReactEvent.Mouse.preventDefault(e)
+                          setState(state => {
+                            let exercises = workout.exercises
+                            {
+                              editing: IndexSet.remove(state.editing, i),
+                              workout: {
+                                ...workout,
+                                exercises: ArrayUtils.removeIndex(exercises, i),
+                              },
+                            }
+                          })
+                        }}>
+                        {React.string("✖")}
+                      </button>
+                    </td>
+                  </>
+                }}
+              </tr>
+            }),
+          )}
+        </tbody>
+      </table>
       <NotesComponent
         initialNotes={workout.notes}
         update={notes => setState(state => {...state, workout: {...state.workout, notes}})}
       />
       <div className="exercise-editor">
         <ExerciseEditor
+          mode=ExerciseEditor.Adder
           exercise={blankExercise}
           update={exercise =>
             setState(state => {
@@ -340,7 +417,7 @@ module WorkoutComponent = {
 
 let testState: array<Workout.workout> = [
   {
-    date: DateUtils.dayBefore(DateUtils.now()),
+    date: DateUtils.now()->DateUtils.dayBefore->DateUtils.dayBefore,
     exercises: [
       {
         movement: Movement.Bench,
@@ -358,7 +435,7 @@ let testState: array<Workout.workout> = [
     notes: "Upper body workout",
   },
   {
-    date: DateUtils.now(),
+    date: DateUtils.now()->DateUtils.dayBefore,
     exercises: [
       {
         movement: Movement.Squat,
@@ -417,6 +494,20 @@ module App = {
             update={workout => {
               setState(s => {
                 Workout.editWorkout(s, w.date, workout)
+              })
+            }}
+            delete={workout => {
+              setState(s => Workout.removeWorkout(s, workout.date))
+            }}
+            duplicate={workout => {
+              setState(s => {
+                Workout.addWorkout(
+                  s,
+                  {
+                    ...workout,
+                    date: DateUtils.now(),
+                  },
+                )
               })
             }}
           />

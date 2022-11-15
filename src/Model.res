@@ -95,14 +95,14 @@ module WeightScheme = {
   let toString = (w: scheme) => {
     switch w {
     | Weight(weight, metric) =>
-      "@ " ++
       Belt.Int.toString(weight) ++
+      " " ++
       switch metric {
       | Kg => "kg."
       | Lb => "lb."
       }
     | Amrap => "AMRAP"
-    | Rpe(rpe) => "@ RPE " ++ Belt.Int.toString(rpe)
+    | Rpe(rpe) => "RPE " ++ Belt.Int.toString(rpe)
     | Bodyweight => "Bodyweight"
     }
   }
@@ -150,7 +150,9 @@ module Workout = {
 
   let addWorkout = (p: plan, w: workout) => {
     let result = {workouts: ArrayUtils.pushBack(p.workouts, w)}
-    Js.Array2.sortInPlace(result.workouts)->ignore
+    Js.Array2.sortInPlaceWith(result.workouts, (l, r) =>
+      DateUtils.compareDates(l.date, r.date)
+    )->ignore
     result
   }
 
@@ -165,7 +167,7 @@ module Workout = {
     } else {
       let result = {workouts: ArrayUtils.setIndex(p.workouts, i, w)}
       Js.Array2.sortInPlaceWith(result.workouts, (l, r) =>
-        Belt.Float.toInt(Js.Date.getSeconds(r.date) -. Js.Date.getSeconds(l.date))
+        DateUtils.compareDates(l.date, r.date)
       )->ignore
       result
     }

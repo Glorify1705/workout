@@ -65,7 +65,7 @@ input[type="number"] {
     text-align: center;
 }
 
-.exercise-display tbody tr:nth-child(odd) {
+.exercise-display tbody tr:nth-child(even) {
     background-color: #ccc;
     text-align: left;
 }
@@ -94,7 +94,12 @@ button {
 }
 
 .workout-notes {
-    width: 100%;
+    width: 90%;
+    margin: 0 auto;
     border: 1px solid black;
-    padding: 1em;
+    margin-top: 1em;
+}
+
+.workout-notes pre {
+    margin-left: 1em;
 }

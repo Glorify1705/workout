@@ -220,8 +220,8 @@ module NotesComponent = {
 
     {
       if !editing {
-        <div>
-          <pre className="workout-notes">
+        <div className="workout-notes">
+          <pre>
             {React.string(notes)}
             <button
               className="edit-button"

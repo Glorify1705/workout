@@ -8,8 +8,7 @@
     text-align: center;
 }
 
-#exercise-adder {
-    text-align: center;
+.exercise-editor {
 }
 
 .input {
@@ -31,10 +30,10 @@ input[type="number"] {
     padding-left: 0.5em;
 }
 
-#exercise-adder {
+.exercise-editor {
     margin-top: 1em;
     padding-top: 1em;
-    border-top: 1px solid black;
+    text-align: center;
 }
 
 .edit-button {
@@ -45,10 +44,23 @@ input[type="number"] {
     margin-left: 0.2em;
 }
 
+.workout-display {
+    margin-top: 1em;
+}
+
 .workout-controls {
     text-align: right;
     margin-bottom: 1em;
 }
 
 .workout-display-top {
+    border-top: 1px solid black;
+    padding-top: 0.2em;
+    text-align: right;
+}
+
+.workout-notes {
+    width: 100%;
+    border: 1px solid black;
+    padding: 1em;
 }

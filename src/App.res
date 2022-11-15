@@ -169,15 +169,17 @@ module NotesComponent = {
     {
       if !editing {
         <div>
-          <pre> {React.string(notes)} </pre>
-          <button
-            className="edit-button"
-            onClick={e => {
-              ReactEvent.Mouse.preventDefault(e)
-              setState(s => {...s, editing: true})
-            }}>
-            {React.string("✎")}
-          </button>
+          <pre className="workout-notes">
+            {React.string(notes)}
+            <button
+              className="edit-button"
+              onClick={e => {
+                ReactEvent.Mouse.preventDefault(e)
+                setState(s => {...s, editing: true})
+              }}>
+              {React.string("✎")}
+            </button>
+          </pre>
         </div>
       } else {
         <div>
@@ -247,7 +249,7 @@ module WorkoutComponent = {
     }, [state.workout])
 
     <div className="workout-display">
-      <div id="workout-display-top">
+      <div className="workout-display-top">
         <DateComponent
           date={state.workout.date}
           update={date => setState(s => {...s, workout: {...s.workout, date}})}
@@ -317,7 +319,7 @@ module WorkoutComponent = {
         initialNotes={workout.notes}
         update={notes => setState(state => {...state, workout: {...state.workout, notes}})}
       />
-      <div id="exercise-adder">
+      <div className="exercise-editor">
         <ExerciseEditor
           exercise={blankExercise}
           update={exercise =>
@@ -409,16 +411,15 @@ module App = {
       </div>
       {React.array(
         Belt.Array.map(state.workouts, w => {
-          <div key={DateUtils.toIso8861(w.date)}>
-            <WorkoutComponent
-              workout={w}
-              update={workout => {
-                setState(s => {
-                  Workout.editWorkout(s, w.date, workout)
-                })
-              }}
-            />
-          </div>
+          <WorkoutComponent
+            key={DateUtils.toIso8861(w.date)}
+            workout={w}
+            update={workout => {
+              setState(s => {
+                Workout.editWorkout(s, w.date, workout)
+              })
+            }}
+          />
         }),
       )}
     </div>

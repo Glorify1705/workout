@@ -141,6 +141,9 @@ module ExerciseEditor = {
 
     | Adder =>
       <span className="exercise-adder">
+        <span>
+          <b> {React.string("Add exercise: ")} </b>
+        </span>
         <MovementSelector
           value={movement}
           update={movement => {

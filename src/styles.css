@@ -16,13 +16,6 @@ input[type="number"] {
     width: 2.7em;
 }
 
-#copiers {
-    margin-top: 1em;
-    padding-top: 1em;
-    border-top: 1px solid black;
-    text-align: right;
-}
-
 .scheme-display {
     padding-left: 0.5em;
 }
@@ -71,7 +64,12 @@ input[type="number"] {
 }
 
 .exercise-controls {
-    text-align: center
+    text-align: center;
+}
+
+.exercise-adder {
+    border: 1px solid black;
+    padding: 0.5em;
 }
 
 button {

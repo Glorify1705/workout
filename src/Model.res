@@ -42,7 +42,7 @@ module WeightScheme = {
 
   type schemeType = [#Kg | #Lb | #Rpe | #Amrap | #Bodyweight]
 
-  let schemeTypes: array<schemeType> = [#Kg, #Lb, #Rpe, #Amrap, #Bodyweight]
+  let schemeTypes = [#Kg, #Lb, #Rpe, #Amrap, #Bodyweight]
 
   let schemeTypeToString = t =>
     switch t {

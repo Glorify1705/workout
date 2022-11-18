@@ -12,29 +12,28 @@ module String = {
 }
 
 module Array = {
-  module Array = Js.Array2
   let removeIndex = (arr: array<'t>, i: int) => {
-    let length = Array.length(arr)
-    let prefix = arr->Array.slice(~start=0, ~end_=i)
-    let suffix = arr->Array.slice(~start=i + 1, ~end_=length)
-    Array.concat(prefix, suffix)
+    let length = Js.Array2.length(arr)
+    let prefix = arr->Js.Array2.slice(~start=0, ~end_=i)
+    let suffix = arr->Js.Array2.slice(~start=i + 1, ~end_=length)
+    Js.Array2.concat(prefix, suffix)
   }
 
   let setIndex = (arr: array<'t>, i: int, v: 't) => {
-    let length = Array.length(arr)
-    let prefix = arr->Array.slice(~start=0, ~end_=i)
-    let suffix = arr->Array.slice(~start=i + 1, ~end_=length)
-    prefix->Array.concat([v])->Array.concat(suffix)
+    let length = Js.Array2.length(arr)
+    let prefix = arr->Js.Array2.slice(~start=0, ~end_=i)
+    let suffix = arr->Js.Array2.slice(~start=i + 1, ~end_=length)
+    prefix->Js.Array2.concat([v])->Js.Array2.concat(suffix)
   }
 
   let pushBack = (arr: array<'t>, v: 't) => {
-    Array.concat(arr, [v])
+    Js.Array2.concat(arr, [v])
   }
 
   let insertAt = (arr: array<'t>, i: int, v: 't) => {
-    Array.concatMany(
-      Array.slice(arr, ~start=0, ~end_=i),
-      [[v], Array.slice(arr, ~start=i, ~end_=Array.length(arr))],
+    Js.Array2.concatMany(
+      Js.Array2.slice(arr, ~start=0, ~end_=i),
+      [[v], Js.Array2.slice(arr, ~start=i, ~end_=Js.Array2.length(arr))],
     )
   }
 }
@@ -87,4 +86,11 @@ module Clipboard = {
     })
     ->ignore
   }
+}
+
+module Markdown = {
+  type t
+  @module("showdown") @new external makeConverter: unit => t = "Converter"
+
+  @send external convertHtml: (t, string) => string = "makeHtml"
 }

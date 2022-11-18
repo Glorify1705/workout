@@ -94,10 +94,13 @@ button {
 .workout-notes {
     width: 90%;
     margin: 0 auto;
-    border: 1px solid black;
     margin-top: 1em;
 }
 
-.workout-notes pre {
-    margin-left: 1em;
+.notes-editor {
+    width: 100%;
+}
+
+.notes-editor textarea {
+    width: 100%;
 }

@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as ReactDomClient from "react-dom/client";
+import * as showdown from "showdown";
 import * as App$RescriptReactRealworldExampleApp from "./App.bs.js";
 import styles from './styles.css';
 

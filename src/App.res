@@ -215,35 +215,39 @@ module NotesComponent = {
   let make = (~initialNotes: string, ~update: string => unit) => {
     let (state, setState) = React.useState(_ => {editing: false, notes: initialNotes})
     let {editing, notes} = state
+    let converter = Utils.Markdown.makeConverter()
     React.useEffect1(() => {
       update(state.notes)
       None
     }, [state])
 
-    {
-      if !editing {
-        <div className="workout-notes">
-          <pre>
-            {React.string(notes)}
-            <button
-              className="edit-button"
-              onClick={e => {
-                ReactEvent.Mouse.preventDefault(e)
-                setState(s => {...s, editing: true})
-              }}>
-              {React.string("✎")}
-            </button>
-          </pre>
-        </div>
-      } else {
-        <div>
-          <textarea
-            value={notes}
-            onChange={e => {
-              let notes = ReactEvent.Form.target(e)["value"]
-              setState(s => {...s, notes})
-            }}
+    <div className="workout-notes">
+      {if !editing {
+        <>
+          <div
+            className="notes-display"
+            dangerouslySetInnerHTML={"__html": Utils.Markdown.convertHtml(converter, notes)}
           />
+          <button
+            className="edit-notes-button"
+            onClick={e => {
+              ReactEvent.Mouse.preventDefault(e)
+              setState(s => {...s, editing: true})
+            }}>
+            {React.string("Edit Notes ✎")}
+          </button>
+        </>
+      } else {
+        <>
+          <div className="notes-editor">
+            <textarea
+              value={notes}
+              onChange={e => {
+                let notes = ReactEvent.Form.target(e)["value"]
+                setState(s => {...s, notes})
+              }}
+            />
+          </div>
           <button
             className="edit-button"
             onClick={e => {
@@ -252,9 +256,9 @@ module NotesComponent = {
             }}>
             {React.string("✓")}
           </button>
-        </div>
-      }
-    }
+        </>
+      }}
+    </div>
   }
 }
 
@@ -451,7 +455,7 @@ let testState: array<Workout.workout> = [
         weight: WeightScheme.Weight(80, WeightScheme.Kg),
       },
     ],
-    notes: "Upper body workout",
+    notes: "**Upper body workout**: Focus on pressing hard.",
   },
   {
     date: Utils.Date.now()->Utils.Date.dayBefore,
@@ -470,11 +474,11 @@ let testState: array<Workout.workout> = [
       },
       {movement: Movement.Pullups, sets: 5, reps: 8, weight: WeightScheme.Bodyweight},
     ],
-    notes: "Lower body workout",
+    notes: "**Lower body workout**: Focus on breathing and *bracing*",
   },
 ]
 
-module App = {
+module Workouts = {
   @react.component
   let make = () => {
     let blankState: Workout.plan = {workouts: testState}
@@ -497,9 +501,10 @@ module App = {
         <button
           className="input"
           onClick={_ => {
-            let workout = Workout.getWorkout(state, Utils.Date.now())
-            if Belt.Option.isSome(workout) {
-              Utils.Clipboard.copy(Belt.Option.getUnsafe(workout)->Workout.workoutToString)
+            let maybeWorkout = Workout.getWorkout(state, Utils.Date.now())
+            if Belt.Option.isSome(maybeWorkout) {
+              let workout = Belt.Option.getUnsafe(maybeWorkout)
+              Utils.Clipboard.copy(workout->Workout.workoutToString)
             }
           }}>
           {React.string("Copy today's workout")}
@@ -533,5 +538,16 @@ module App = {
         }),
       )}
     </div>
+  }
+}
+
+module App = {
+  @react.component
+  let make = () => {
+    let url = RescriptReactRouter.useUrl()
+    switch url.path {
+    | list{} => <Workouts />
+    | _ => <p> {React.string("Page not found")} </p>
+    }
   }
 }

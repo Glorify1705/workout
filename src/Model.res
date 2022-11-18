@@ -1,7 +1,7 @@
 open Utils
 
 module Movement = {
-  type movement = Squat | Bench | Deadlift | Pullups | BarbellRows
+  type movement = Squat | Bench | Deadlift | Pullups | BarbellRows | OverheadPress
 
   let toString = (m: movement) =>
     switch m {
@@ -10,9 +10,10 @@ module Movement = {
     | Deadlift => "deadlift"
     | Pullups => "pullups"
     | BarbellRows => "barbell rows"
+    | OverheadPress => "overhead press"
     }
 
-  let movements = [Squat, Bench, Deadlift, Pullups, BarbellRows]
+  let movements = [Squat, Bench, Deadlift, Pullups, BarbellRows, OverheadPress]
 
   let fromString = (s: string) => {
     switch s {
@@ -21,6 +22,7 @@ module Movement = {
     | "deadlift" => Some(Deadlift)
     | "pullups" => Some(Pullups)
     | "barbell rows" => Some(BarbellRows)
+    | "overhead press" => Some(OverheadPress)
     | _ => None
     }
   }

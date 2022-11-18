@@ -371,8 +371,8 @@ module WorkoutComponent = {
                       </button>
                       <button
                         className="delete-button"
-                        onClick={e => {
-                          ReactEvent.Mouse.preventDefault(e)
+                        onClick={event => {
+                          ReactEvent.Mouse.preventDefault(event)
                           setState(state => {
                             let exercises = workout.exercises
                             {
@@ -385,6 +385,23 @@ module WorkoutComponent = {
                           })
                         }}>
                         {React.string("✖")}
+                      </button>
+                      <button
+                        className="duplicate-button"
+                        onClick={event => {
+                          ReactEvent.Mouse.preventDefault(event)
+                          setState(state => {
+                            let exercises = workout.exercises
+                            {
+                              editing: IndexSet.remove(state.editing, i),
+                              workout: {
+                                ...workout,
+                                exercises: ArrayUtils.insertAt(exercises, i, e),
+                              },
+                            }
+                          })
+                        }}>
+                        {React.string("Duplicate")}
                       </button>
                     </td>
                   </>

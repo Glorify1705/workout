@@ -30,6 +30,13 @@ module ArrayUtils = {
   let pushBack = (arr: array<'t>, v: 't) => {
     Array.concat(arr, [v])
   }
+
+  let insertAt = (arr: array<'t>, i: int, v: 't) => {
+    Array.concatMany(
+      Array.slice(arr, ~start=0, ~end_=i),
+      [[v], Array.slice(arr, ~start=i, ~end_=Array.length(arr))],
+    )
+  }
 }
 
 module DateUtils = {

@@ -1,5 +1,3 @@
-open Utils
-
 module Movement = {
   type movement = Squat | Bench | Deadlift | Pullups | BarbellRows | OverheadPress
 
@@ -124,7 +122,7 @@ module Workout = {
     notes: string,
   }
 
-  let emptyWorkout = () => {date: DateUtils.now(), exercises: [], notes: ""}
+  let emptyWorkout = () => {date: Utils.Date.now(), exercises: [], notes: ""}
 
   type plan = {workouts: array<workout>}
 
@@ -138,22 +136,22 @@ module Workout = {
 
   let exerciseToString = (e: exercise) => {
     let {movement, reps, sets, weight} = e
-    StringUtils.capitalize(Movement.toString(movement)) ++
+    Utils.String.capitalize(Movement.toString(movement)) ++
     " - " ++
     loadToString(~sets, ~reps, ~weight)
   }
 
   let workoutToString = (w: workout) => {
     "🗓 " ++
-    DateUtils.toIso8861(w.date) ++
+    Utils.Date.toIso8861(w.date) ++
     "\n----------------\n" ++
     Belt.Array.joinWith(w.exercises, "\n", exerciseToString)
   }
 
   let addWorkout = (p: plan, w: workout) => {
-    let result = {workouts: ArrayUtils.pushBack(p.workouts, w)}
+    let result = {workouts: Utils.Array.pushBack(p.workouts, w)}
     Js.Array2.sortInPlaceWith(result.workouts, (l, r) =>
-      DateUtils.compareDates(l.date, r.date)
+      Utils.Date.compareDates(l.date, r.date)
     )->ignore
     result
   }
@@ -163,19 +161,19 @@ module Workout = {
   }
 
   let editWorkout = (p: plan, d: Js.Date.t, w: workout): plan => {
-    let i = Js.Array2.findIndex(p.workouts, w => DateUtils.sameDate(w.date, d))
+    let i = Js.Array2.findIndex(p.workouts, w => Utils.Date.sameDate(w.date, d))
     if i == -1 {
       p
     } else {
-      let result = {workouts: ArrayUtils.setIndex(p.workouts, i, w)}
+      let result = {workouts: Utils.Array.setIndex(p.workouts, i, w)}
       Js.Array2.sortInPlaceWith(result.workouts, (l, r) =>
-        DateUtils.compareDates(l.date, r.date)
+        Utils.Date.compareDates(l.date, r.date)
       )->ignore
       result
     }
   }
 
   let getWorkout = (p: plan, d: Js.Date.t): option<workout> => {
-    Js.Array2.find(p.workouts, w => DateUtils.sameDate(w.date, d))
+    Js.Array2.find(p.workouts, w => Utils.Date.sameDate(w.date, d))
   }
 }

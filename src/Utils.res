@@ -1,4 +1,4 @@
-module StringUtils = {
+module String = {
   let capitalize = (s: string) => {
     let length = Js.String.length(s)
     if length == 0 {
@@ -11,7 +11,7 @@ module StringUtils = {
   }
 }
 
-module ArrayUtils = {
+module Array = {
   module Array = Js.Array2
   let removeIndex = (arr: array<'t>, i: int) => {
     let length = Array.length(arr)
@@ -39,7 +39,7 @@ module ArrayUtils = {
   }
 }
 
-module DateUtils = {
+module Date = {
   let toIso8861 = (d: Js.Date.t): string => {
     let s = Js.Date.toISOString(d)
     Js.String2.slice(s, ~from=0, ~to_=Js.String2.indexOf(s, "T"))
@@ -76,7 +76,7 @@ module DateUtils = {
   }
 }
 
-module ClipboardUtils = {
+module Clipboard = {
   @val external write: string => Js.Promise.t<'a> = "navigator.clipboard.writeText"
 
   let copy = (s: string) => {

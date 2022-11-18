@@ -1,4 +1,3 @@
-open Utils
 open Model
 
 module MovementSelector = {
@@ -16,7 +15,7 @@ module MovementSelector = {
     }
     let selectors = Movement.movements->Belt.Array.map(m => {
       let ms = Movement.toString(m)
-      <option key={ms} value={ms}> {React.string(StringUtils.capitalize(ms))} </option>
+      <option key={ms} value={ms}> {React.string(Utils.String.capitalize(ms))} </option>
     })
     <select className="input" value={Movement.toString(value)} onChange>
       {React.array(selectors)}
@@ -200,7 +199,7 @@ module ExerciseDisplay = {
         {if sameMovement {
           React.string("")
         } else {
-          {React.string(StringUtils.capitalize(Movement.toString(movement)))}
+          {React.string(Utils.String.capitalize(Movement.toString(movement)))}
         }}
       </td>
       <td> {React.string(Belt.Int.toString(sets))} </td>
@@ -269,10 +268,10 @@ module DateComponent = {
     }, [state])
     <input
       type_="date"
-      value={DateUtils.toIso8861(state)}
+      value={Utils.Date.toIso8861(state)}
       onChange={event => {
         ReactEvent.Form.preventDefault(event)
-        let d = DateUtils.fromIso8861(ReactEvent.Form.target(event)["value"])
+        let d = Utils.Date.fromIso8861(ReactEvent.Form.target(event)["value"])
         setState(_ => d)
       }}
     />
@@ -314,7 +313,7 @@ module WorkoutComponent = {
           date={state.workout.date}
           update={date => setState(s => {...s, workout: {...s.workout, date}})}
         />
-        <button onClick={_ => ClipboardUtils.copy(Workout.workoutToString(state.workout))}>
+        <button onClick={_ => Utils.Clipboard.copy(Workout.workoutToString(state.workout))}>
           {React.string("Copy to clipboard")}
         </button>
         <button onClick={_ => duplicate(state.workout)}> {React.string("Duplicate")} </button>
@@ -344,7 +343,7 @@ module WorkoutComponent = {
                           editing: IndexSet.remove(state.editing, i),
                           workout: {
                             ...state.workout,
-                            exercises: ArrayUtils.setIndex(state.workout.exercises, i, exercise),
+                            exercises: Utils.Array.setIndex(state.workout.exercises, i, exercise),
                           },
                         }
                       })
@@ -379,7 +378,7 @@ module WorkoutComponent = {
                               editing: IndexSet.remove(state.editing, i),
                               workout: {
                                 ...workout,
-                                exercises: ArrayUtils.removeIndex(exercises, i),
+                                exercises: Utils.Array.removeIndex(exercises, i),
                               },
                             }
                           })
@@ -396,7 +395,7 @@ module WorkoutComponent = {
                               editing: IndexSet.remove(state.editing, i),
                               workout: {
                                 ...workout,
-                                exercises: ArrayUtils.insertAt(exercises, i, e),
+                                exercises: Utils.Array.insertAt(exercises, i, e),
                               },
                             }
                           })
@@ -437,7 +436,7 @@ module WorkoutComponent = {
 
 let testState: array<Workout.workout> = [
   {
-    date: DateUtils.now()->DateUtils.dayBefore->DateUtils.dayBefore,
+    date: Utils.Date.now()->Utils.Date.dayBefore->Utils.Date.dayBefore,
     exercises: [
       {
         movement: Movement.Bench,
@@ -455,7 +454,7 @@ let testState: array<Workout.workout> = [
     notes: "Upper body workout",
   },
   {
-    date: DateUtils.now()->DateUtils.dayBefore,
+    date: Utils.Date.now()->Utils.Date.dayBefore,
     exercises: [
       {
         movement: Movement.Squat,
@@ -487,7 +486,7 @@ module App = {
           className="input"
           onClick={_ =>
             setState(s => {
-              if Belt.Option.isNone(Workout.getWorkout(s, DateUtils.now())) {
+              if Belt.Option.isNone(Workout.getWorkout(s, Utils.Date.now())) {
                 Workout.addWorkout(s, Workout.emptyWorkout())
               } else {
                 s
@@ -498,9 +497,9 @@ module App = {
         <button
           className="input"
           onClick={_ => {
-            let workout = Workout.getWorkout(state, DateUtils.now())
+            let workout = Workout.getWorkout(state, Utils.Date.now())
             if Belt.Option.isSome(workout) {
-              ClipboardUtils.copy(Belt.Option.getUnsafe(workout)->Workout.workoutToString)
+              Utils.Clipboard.copy(Belt.Option.getUnsafe(workout)->Workout.workoutToString)
             }
           }}>
           {React.string("Copy today's workout")}
@@ -509,7 +508,7 @@ module App = {
       {React.array(
         Belt.Array.map(state.workouts, w => {
           <WorkoutComponent
-            key={DateUtils.toIso8861(w.date)}
+            key={Utils.Date.toIso8861(w.date)}
             workout={w}
             update={workout => {
               setState(s => {
@@ -525,7 +524,7 @@ module App = {
                   s,
                   {
                     ...workout,
-                    date: DateUtils.now(),
+                    date: Utils.Date.now(),
                   },
                 )
               })

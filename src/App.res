@@ -486,7 +486,7 @@ let testState: array<Workout.workout> = {
   })
 }
 
-module Workouts = {
+module WorkoutsComponent = {
   type t = {
     plan: Workout.plan,
     week: Js.Date.t,
@@ -506,14 +506,16 @@ module Workouts = {
           onClick={_ => setState(s => {...s, week: Utils.Date.daysBefore(s.week, 7.0)})}>
           {React.string("←")}
         </button>
-        <b>
-          {React.string(
-            "Week " ++
-            Utils.Date.toIso8601(state.week) ++
-            " to " ++
-            Utils.Date.toIso8601(Utils.Date.daysAfter(state.week, 7.0)),
-          )}
-        </b>
+        <span className="week-display">
+          <b>
+            {React.string(
+              "Week " ++
+              Utils.Date.toIso8601(state.week) ++
+              " to " ++
+              Utils.Date.toIso8601(Utils.Date.daysAfter(state.week, 7.0)),
+            )}
+          </b>
+        </span>
         <button
           className="move-button"
           onClick={_ => setState(s => {...s, week: Utils.Date.daysAfter(s.week, 7.0)})}>
@@ -589,7 +591,7 @@ module App = {
   let make = () => {
     let url = RescriptReactRouter.useUrl()
     switch url.path {
-    | list{} => <Workouts />
+    | list{} => <WorkoutsComponent />
     | _ => <p> {React.string("Page not found")} </p>
     }
   }

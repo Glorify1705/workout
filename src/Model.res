@@ -131,7 +131,7 @@ module Workout = {
   }
 
   let loadToString = (~sets: int, ~reps: int, ~weight: WeightScheme.scheme) => {
-    setsToString(~sets, ~reps) ++ WeightScheme.toString(weight)
+    setsToString(~sets, ~reps) ++ " " ++ WeightScheme.toString(weight)
   }
 
   let exerciseToString = (e: exercise) => {
@@ -143,7 +143,7 @@ module Workout = {
 
   let workoutToString = (w: workout) => {
     "🗓 " ++
-    Utils.Date.toIso8861(w.date) ++
+    Utils.Date.toIso8601(w.date) ++
     "\n----------------\n" ++
     Belt.Array.joinWith(w.exercises, "\n", exerciseToString)
   }

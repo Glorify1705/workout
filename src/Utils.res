@@ -39,12 +39,21 @@ module Array = {
 }
 
 module Date = {
-  let toIso8861 = (d: Js.Date.t): string => {
-    let s = Js.Date.toISOString(d)
-    Js.String2.slice(s, ~from=0, ~to_=Js.String2.indexOf(s, "T"))
+  let toIso8601 = (d: Js.Date.t): string => {
+    let pad = s =>
+      if Js.String.length(s) < 2 {
+        "0" ++ s
+      } else {
+        s
+      }
+    [
+      Js.Date.getFullYear(d),
+      1.0 +. Js.Date.getMonth(d),
+      Js.Date.getDate(d),
+    ]->Belt.Array.joinWith("-", f => f->Belt.Float.toString->pad)
   }
 
-  let fromIso8861 = (s: string): Js.Date.t => {
+  let fromIso8601 = (s: string): Js.Date.t => {
     Js.Date.fromString(s)
   }
 

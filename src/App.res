@@ -272,10 +272,10 @@ module DateComponent = {
     }, [state])
     <input
       type_="date"
-      value={Utils.Date.toIso8861(state)}
+      value={Utils.Date.toIso8601(state)}
       onChange={event => {
         ReactEvent.Form.preventDefault(event)
-        let d = Utils.Date.fromIso8861(ReactEvent.Form.target(event)["value"])
+        let d = Utils.Date.fromIso8601(ReactEvent.Form.target(event)["value"])
         setState(_ => d)
       }}
     />
@@ -438,45 +438,46 @@ module WorkoutComponent = {
   }
 }
 
-let testState: array<Workout.workout> = [
-  {
-    date: Utils.Date.now()->Utils.Date.dayBefore->Utils.Date.dayBefore,
-    exercises: [
-      {
-        movement: Movement.Bench,
-        sets: 5,
-        reps: 5,
-        weight: WeightScheme.Weight(80, WeightScheme.Kg),
-      },
-      {
-        movement: Movement.BarbellRows,
-        sets: 4,
-        reps: 8,
-        weight: WeightScheme.Weight(80, WeightScheme.Kg),
-      },
-    ],
-    notes: "**Upper body workout**: Focus on pressing hard.",
-  },
-  {
-    date: Utils.Date.now()->Utils.Date.dayBefore,
-    exercises: [
-      {
-        movement: Movement.Squat,
-        sets: 5,
-        reps: 5,
-        weight: WeightScheme.Weight(100, WeightScheme.Kg),
-      },
-      {
-        movement: Movement.Deadlift,
-        sets: 5,
-        reps: 5,
-        weight: WeightScheme.Weight(140, WeightScheme.Kg),
-      },
-      {movement: Movement.Pullups, sets: 5, reps: 8, weight: WeightScheme.Bodyweight},
-    ],
-    notes: "**Lower body workout**: Focus on breathing and *bracing*",
-  },
-]
+let testState: array<Workout.workout> = {
+  [
+    "2022/11/01",
+    "2022/11/02",
+    "2022/11/03",
+    "2022/11/04",
+    "2022/11/05",
+    "2022/11/06",
+    "2022/11/07",
+    "2022/11/08",
+    "2022/11/09",
+    "2022/11/10",
+  ]->Js.Array2.map(d => {
+    let workout: Workout.workout = {
+      date: Utils.Date.fromIso8601(d),
+      exercises: [
+        {
+          movement: Movement.Squat,
+          sets: 3,
+          reps: 8,
+          weight: WeightScheme.Weight(100, WeightScheme.Kg),
+        },
+        {
+          movement: Movement.Bench,
+          sets: 5,
+          reps: 5,
+          weight: WeightScheme.Weight(80, WeightScheme.Kg),
+        },
+        {
+          movement: Movement.BarbellRows,
+          sets: 4,
+          reps: 8,
+          weight: WeightScheme.Weight(80, WeightScheme.Kg),
+        },
+      ],
+      notes: "**Notes**: Workout on the " ++ d,
+    }
+    workout
+  })
+}
 
 module Workouts = {
   @react.component
@@ -513,7 +514,7 @@ module Workouts = {
       {React.array(
         Belt.Array.map(state.workouts, w => {
           <WorkoutComponent
-            key={Utils.Date.toIso8861(w.date)}
+            key={Utils.Date.toIso8601(w.date)}
             workout={w}
             update={workout => {
               setState(s => {

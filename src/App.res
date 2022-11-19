@@ -336,7 +336,9 @@ module WorkoutComponent = {
         <tbody>
           {React.array(
             Belt.Array.mapWithIndex(workout.exercises, (i, e) => {
-              <tr key={Belt.Int.toString(i)}>
+              <tr
+                key={Belt.Int.toString(i)}
+                onDoubleClick={_ => setState(s => {...s, editing: IndexSet.add(s.editing, i)})}>
                 {if IndexSet.has(state.editing, i) {
                   <ExerciseEditor
                     mode=ExerciseEditor.Editor
@@ -440,16 +442,21 @@ module WorkoutComponent = {
 
 let testState: array<Workout.workout> = {
   [
-    "2022/11/01",
-    "2022/11/02",
-    "2022/11/03",
-    "2022/11/04",
-    "2022/11/05",
-    "2022/11/06",
-    "2022/11/07",
-    "2022/11/08",
-    "2022/11/09",
     "2022/11/10",
+    "2022/11/11",
+    "2022/11/12",
+    "2022/11/13",
+    "2022/11/14",
+    "2022/11/15",
+    "2022/11/16",
+    "2022/11/17",
+    "2022/11/18",
+    "2022/11/19",
+    "2022/11/20",
+    "2022/11/21",
+    "2022/11/22",
+    "2022/11/23",
+    "2022/11/24",
   ]->Js.Array2.map(d => {
     let workout: Workout.workout = {
       date: Utils.Date.fromIso8601(d),
@@ -480,29 +487,57 @@ let testState: array<Workout.workout> = {
 }
 
 module Workouts = {
+  type t = {
+    plan: Workout.plan,
+    week: Js.Date.t,
+  }
   @react.component
   let make = () => {
-    let blankState: Workout.plan = {workouts: testState}
-    let (state, setState) = React.useState(() => blankState)
+    let testWorkouts: Workout.plan = {workouts: testState}
+    let (state, setState) = React.useState(() => {
+      plan: testWorkouts,
+      week: Utils.Date.startOfWeek(Utils.Date.now()),
+    })
     <div>
       <h1> {React.string("Workout Tracker")} </h1>
+      <div className="week-title">
+        <button
+          className="move-button"
+          onClick={_ => setState(s => {...s, week: Utils.Date.daysBefore(s.week, 7.0)})}>
+          {React.string("←")}
+        </button>
+        <b>
+          {React.string(
+            "Week " ++
+            Utils.Date.toIso8601(state.week) ++
+            " to " ++
+            Utils.Date.toIso8601(Utils.Date.daysAfter(state.week, 7.0)),
+          )}
+        </b>
+        <button
+          className="move-button"
+          onClick={_ => setState(s => {...s, week: Utils.Date.daysAfter(s.week, 7.0)})}>
+          {React.string("→")}
+        </button>
+      </div>
       <div className="workout-controls">
         <button
           className="input"
           onClick={_ =>
             setState(s => {
-              if Belt.Option.isNone(Workout.getWorkout(s, Utils.Date.now())) {
-                Workout.addWorkout(s, Workout.emptyWorkout())
+              let plan = if Belt.Option.isNone(Workout.getWorkout(s.plan, Utils.Date.now())) {
+                Workout.addWorkout(s.plan, Workout.emptyWorkout())
               } else {
-                s
+                s.plan
               }
+              {...s, plan}
             })}>
           {React.string("Add Workout")}
         </button>
         <button
           className="input"
           onClick={_ => {
-            let maybeWorkout = Workout.getWorkout(state, Utils.Date.now())
+            let maybeWorkout = Workout.getWorkout(state.plan, Utils.Date.now())
             if Belt.Option.isSome(maybeWorkout) {
               let workout = Belt.Option.getUnsafe(maybeWorkout)
               Utils.Clipboard.copy(workout->Workout.workoutToString)
@@ -512,27 +547,34 @@ module Workouts = {
         </button>
       </div>
       {React.array(
-        Belt.Array.map(state.workouts, w => {
+        state.plan.workouts
+        ->Belt.Array.keep(w => {
+          state.week <= w.date && w.date < Utils.Date.daysAfter(state.week, 7.0)
+        })
+        ->Belt.Array.map(w => {
           <WorkoutComponent
             key={Utils.Date.toIso8601(w.date)}
             workout={w}
             update={workout => {
               setState(s => {
-                Workout.editWorkout(s, w.date, workout)
+                {...s, plan: Workout.editWorkout(s.plan, w.date, workout)}
               })
             }}
             delete={workout => {
-              setState(s => Workout.removeWorkout(s, workout.date))
+              setState(s => {...s, plan: Workout.removeWorkout(s.plan, workout.date)})
             }}
             duplicate={workout => {
               setState(s => {
-                Workout.addWorkout(
-                  s,
-                  {
-                    ...workout,
-                    date: Utils.Date.now(),
-                  },
-                )
+                {
+                  ...s,
+                  plan: Workout.addWorkout(
+                    s.plan,
+                    {
+                      ...workout,
+                      date: Utils.Date.now(),
+                    },
+                  ),
+                }
               })
             }}
           />

@@ -77,10 +77,23 @@ module Date = {
 
   let now = (): Js.Date.t => Js.Date.make()
 
-  let dayBefore = (d: Js.Date.t) => {
-    let result = d
-    Js.Date.setDate(result, Js.Date.getDate(d) -. 1.)->ignore
-    result
+  let daysBefore = (d: Js.Date.t, days: float) => {
+    let s = Js.Date.fromFloat(Js.Date.getTime(d))
+    Js.Date.fromFloat(Js.Date.setDate(s, Js.Date.getDate(s) -. days))
+  }
+
+  let dayBefore = (d: Js.Date.t) => daysBefore(d, 1.0)
+
+  let daysAfter = (d: Js.Date.t, days: float) => {
+    let s = Js.Date.fromFloat(Js.Date.getTime(d))
+    Js.Date.fromFloat(Js.Date.setDate(s, Js.Date.getDate(s) +. days))
+  }
+
+  let dayAfter = (d: Js.Date.t) => daysAfter(d, 1.0)
+
+  let startOfWeek = (d: Js.Date.t) => {
+    let monday = Js.Date.getDate(d) -. Js.Date.getDay(d) +. 1.0
+    Js.Date.fromFloat(Js.Date.setDate(d, monday))
   }
 }
 
@@ -102,4 +115,11 @@ module Markdown = {
   @module("showdown") @new external makeConverter: unit => t = "Converter"
 
   @send external convertHtml: (t, string) => string = "makeHtml"
+}
+
+module Document = {
+  @scope("document") @val
+  external addKeyboardListener: (string, Dom.keyboardEvent => unit) => unit = "addEventListener"
+
+  @get external getKey: Dom.keyboardEvent => string = "key"
 }

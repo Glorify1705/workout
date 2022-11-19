@@ -1,12 +1,13 @@
-import * as React from "react";
-import * as ReactDomClient from "react-dom/client";
-import * as showdown from "showdown";
-import * as App$RescriptReactRealworldExampleApp from "./App.bs.js";
+import * as React from 'react';
+import * as ReactDomClient from 'react-dom/client';
+import * as App$RescriptReactRealworldExampleApp from './App.bs.js';
 import styles from './styles.css';
 
-const root = ReactDomClient.createRoot(document.querySelector("#root"));
+const root = ReactDomClient.createRoot(document.querySelector('#root'));
 const app = App$RescriptReactRealworldExampleApp.App.make;
 
-root.render(React.createElement(React.StrictMode, {
-    children: React.createElement(app, {})
-}));
+root.render(
+  React.createElement(React.StrictMode, {
+    children: React.createElement(app, {}),
+  })
+);

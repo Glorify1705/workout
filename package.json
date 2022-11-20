@@ -25,7 +25,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rescript-webapi": "^0.6.1",
-    "showdown": "^2.1.0"
+    "showdown": "^2.1.0",
+    "write-excel-file": "^1.4.15"
   },
   "devDependencies": {
     "@jihchi/vite-plugin-rescript": "^4.0.1",

@@ -36,6 +36,10 @@ module Array = {
       [[v], Js.Array2.slice(arr, ~start=i, ~end_=Js.Array2.length(arr))],
     )
   }
+
+  let flatMap = (arr: array<'a>, f: 'a => array<'b>): array<'b> => {
+    Belt.Array.concatMany(Js.Array2.map(arr, f))
+  }
 }
 
 module Date = {
@@ -122,4 +126,30 @@ module Document = {
   external addKeyboardListener: (string, Dom.keyboardEvent => unit) => unit = "addEventListener"
 
   @get external getKey: Dom.keyboardEvent => string = "key"
+}
+
+module Spreadsheets = {
+  type options = {@as("fileName") filename: string}
+
+  type color = Hex(string) | Rgb(int, int, int)
+
+  type cell = {
+    value: string,
+    span?: int,
+    fontStyle?: [#bold | #italic],
+    align?: [#left | #center | #right],
+    backgroundColor?: color,
+  }
+
+  @module("write-excel-file")
+  external write: (array<array<option<cell>>>, options) => Js.Promise.t<'a> = "default"
+
+  let download = (cells, filename) => {
+    write(cells, {filename: filename})
+    ->Promise.catch(err => {
+      Js.log(err)
+      Js.Promise.resolve()
+    })
+    ->ignore
+  }
 }

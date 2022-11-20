@@ -493,11 +493,34 @@ module WorkoutsComponent = {
   }
   @react.component
   let make = () => {
-    let testWorkouts: Workout.plan = {workouts: testState}
     let (state, setState) = React.useState(() => {
-      plan: testWorkouts,
+      plan: {workouts: testState},
       week: Utils.Date.startOfWeek(Utils.Date.now()),
     })
+    let duplicateWorkout = workout => {
+      setState(s => {
+        {
+          ...s,
+          plan: Workout.addWorkout(
+            s.plan,
+            {
+              ...workout,
+              date: Utils.Date.now(),
+            },
+          ),
+        }
+      })
+    }
+    let addWorkout = () => {
+      setState(s => {
+        let plan = if Belt.Option.isNone(Workout.getWorkout(s.plan, Utils.Date.now())) {
+          Workout.addWorkout(s.plan, Workout.emptyWorkout())
+        } else {
+          s.plan
+        }
+        {...s, plan}
+      })
+    }
     <div>
       <h1> {React.string("Workout Tracker")} </h1>
       <div className="week-title">
@@ -523,17 +546,7 @@ module WorkoutsComponent = {
         </button>
       </div>
       <div className="workout-controls">
-        <button
-          className="input"
-          onClick={_ =>
-            setState(s => {
-              let plan = if Belt.Option.isNone(Workout.getWorkout(s.plan, Utils.Date.now())) {
-                Workout.addWorkout(s.plan, Workout.emptyWorkout())
-              } else {
-                s.plan
-              }
-              {...s, plan}
-            })}>
+        <button className="input" onClick={_ => addWorkout()}>
           {React.string("Add Workout")}
         </button>
         <button
@@ -546,6 +559,12 @@ module WorkoutsComponent = {
             }
           }}>
           {React.string("Copy today's workout")}
+        </button>
+        <button
+          className="input"
+          onClick={_ =>
+            Utils.Spreadsheets.download(Workout.planToSpreadsheet(state.plan), "theplan.xlsx")}>
+          {React.string("Download as Spreadsheet")}
         </button>
       </div>
       {React.array(
@@ -565,20 +584,7 @@ module WorkoutsComponent = {
             delete={workout => {
               setState(s => {...s, plan: Workout.removeWorkout(s.plan, workout.date)})
             }}
-            duplicate={workout => {
-              setState(s => {
-                {
-                  ...s,
-                  plan: Workout.addWorkout(
-                    s.plan,
-                    {
-                      ...workout,
-                      date: Utils.Date.now(),
-                    },
-                  ),
-                }
-              })
-            }}
+            duplicate={duplicateWorkout}
           />
         }),
       )}
@@ -591,8 +597,7 @@ module App = {
   let make = () => {
     let url = RescriptReactRouter.useUrl()
     switch url.path {
-    | list{} => <WorkoutsComponent />
-    | _ => <p> {React.string("Page not found")} </p>
+    | _ => <WorkoutsComponent />
     }
   }
 }

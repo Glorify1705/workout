@@ -176,4 +176,34 @@ module Workout = {
   let getWorkout = (p: plan, d: Js.Date.t): option<workout> => {
     Js.Array2.find(p.workouts, w => Utils.Date.sameDate(w.date, d))
   }
+
+  let planToSpreadsheet = (p: plan) => {
+    let workoutDateToRow = (w: workout): array<option<Utils.Spreadsheets.cell>> => {
+      [
+        Some({value: Utils.Date.toIso8601(w.date), span: 4, fontStyle: #bold, align: #center}),
+        None,
+        None,
+        None,
+      ]
+    }
+    let exerciseToRow = (e: exercise): array<option<Utils.Spreadsheets.cell>> => {
+      [
+        Some({value: Utils.String.capitalize(Movement.toString(e.movement))}),
+        Some({value: Belt.Int.toString(e.sets)}),
+        Some({value: Belt.Int.toString(e.reps)}),
+        Some({value: WeightScheme.toString(e.weight)}),
+      ]
+    }
+    let notesToRow = (w: workout): array<option<Utils.Spreadsheets.cell>> => {
+      [Some({value: w.notes, span: 4, align: #center}), None, None, None]
+    }
+
+    p.workouts->Utils.Array.flatMap(w => {
+      Belt.Array.concatMany([
+        [workoutDateToRow(w)],
+        w.exercises->Js.Array2.map(exerciseToRow),
+        [notesToRow(w)],
+      ])
+    })
+  }
 }

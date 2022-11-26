@@ -83,66 +83,65 @@ module WeightSelector = {
   }
 }
 
-module ExerciseEditor = {
-  type mode = Editor | Adder
-
+module ExerciseAdder = {
   @react.component
-  let make = (~exercise: Workout.exercise, ~update: Workout.exercise => unit, ~mode: mode) => {
+  let make = (~exercise: Workout.exercise, ~update: Workout.exercise => unit) => {
     let (state, setState) = React.useState(() => exercise)
     let {movement, sets, reps, weight} = state
-    switch mode {
-    | Editor =>
-      <>
-        <td>
-          <MovementSelector
-            value={movement}
-            update={movement => {
-              setState(state => {
-                ...state,
-                movement,
-                weight: if Movement.isWeighted(movement) {
-                  weight
-                } else {
-                  WeightScheme.Bodyweight
-                },
-              })
-            }}
-          />
-        </td>
-        <td>
-          <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
-        </td>
-        <td>
-          <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
-        </td>
-        {if Movement.isWeighted(movement) {
-          <td>
-            <WeightSelector weight update={weight => setState(state => {...state, weight})} />
-          </td>
-        } else {
-          <td />
+    <span className="exercise-adder">
+      <span>
+        <b> {React.string("Add exercise: ")} </b>
+      </span>
+      <MovementSelector
+        value={movement}
+        update={movement => {
+          setState(state => {
+            ...state,
+            movement,
+            weight: if Movement.isWeighted(movement) {
+              weight
+            } else {
+              WeightScheme.Bodyweight
+            },
+          })
         }}
-        <td className="exercise-controls">
-          <button
-            className="input"
-            onClick={_ => {
-              update({
-                movement,
-                sets,
-                reps,
-                weight,
-              })
-            }}>
-            {React.string("✓")}
-          </button>
-        </td>
-      </>
+      />
+      <span className="input">
+        {React.string("Sets: ")}
+        <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
+      </span>
+      <span className="input">
+        {React.string("Reps: ")}
+        <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
+      </span>
+      {if Movement.isWeighted(movement) {
+        <WeightSelector weight update={weight => setState(state => {...state, weight})} />
+      } else {
+        <span />
+      }}
+      <button
+        className="input"
+        onClick={_ => {
+          update({
+            movement,
+            sets,
+            reps,
+            weight,
+          })
+        }}>
+        {React.string("✓")}
+      </button>
+    </span>
+  }
+}
 
-    | Adder =>
-      <span className="exercise-adder">
-        <span>
-          <b> {React.string("Add exercise: ")} </b>
-        </span>
+module ExerciseEditor = {
+  @react.component
+  let make = (~exercise: Workout.exercise, ~update: Workout.exercise => unit) => {
+    let (state, setState) = React.useState(() => exercise)
+    let {movement, sets, reps, weight} = state
+    <>
+      <td>
         <MovementSelector
           value={movement}
           update={movement => {
@@ -157,19 +156,21 @@ module ExerciseEditor = {
             })
           }}
         />
-        <span className="input">
-          {React.string("Sets: ")}
-          <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
-        </span>
-        <span className="input">
-          {React.string("Reps: ")}
-          <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
-        </span>
-        {if Movement.isWeighted(movement) {
+      </td>
+      <td>
+        <InputNumberComponent value=sets update={sets => setState(state => {...state, sets})} />
+      </td>
+      <td>
+        <InputNumberComponent value=reps update={reps => setState(state => {...state, reps})} />
+      </td>
+      {if Movement.isWeighted(movement) {
+        <td>
           <WeightSelector weight update={weight => setState(state => {...state, weight})} />
-        } else {
-          <span />
-        }}
+        </td>
+      } else {
+        <td />
+      }}
+      <td className="exercise-controls">
         <button
           className="input"
           onClick={_ => {
@@ -182,8 +183,8 @@ module ExerciseEditor = {
           }}>
           {React.string("✓")}
         </button>
-      </span>
-    }
+      </td>
+    </>
   }
 }
 
@@ -341,7 +342,6 @@ module WorkoutComponent = {
                 onDoubleClick={_ => setState(s => {...s, editing: IndexSet.add(s.editing, i)})}>
                 {if IndexSet.has(state.editing, i) {
                   <ExerciseEditor
-                    mode=ExerciseEditor.Editor
                     exercise={e}
                     update={exercise => {
                       setState(state => {
@@ -421,8 +421,7 @@ module WorkoutComponent = {
         update={notes => setState(state => {...state, workout: {...state.workout, notes}})}
       />
       <div className="exercise-editor">
-        <ExerciseEditor
-          mode=ExerciseEditor.Adder
+        <ExerciseAdder
           exercise={blankExercise}
           update={exercise =>
             setState(state => {

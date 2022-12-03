@@ -20,7 +20,8 @@
   ],
   "bs-dependencies": [
     "@rescript/react",
-    "@ryyppy/rescript-promise"
+    "@ryyppy/rescript-promise",
+    "rescript-material-ui"
   ],
   "bs-dev-dependencies": []
 }

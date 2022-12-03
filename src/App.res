@@ -3,7 +3,7 @@ open Model
 module MovementSelector = {
   @react.component
   let make = (~value: Movement.movement, ~update: Movement.movement => unit) => {
-    let onChange = event => {
+    let onChange = (event, _) => {
       ReactEvent.Form.preventDefault(event)
       let value = ReactEvent.Form.target(event)["value"]
       update(
@@ -15,11 +15,13 @@ module MovementSelector = {
     }
     let selectors = Movement.movements->Belt.Array.map(m => {
       let ms = Movement.toString(m)
-      <option key={ms} value={ms}> {React.string(Utils.String.capitalize(ms))} </option>
+      <Mui.MenuItem key={ms} value={ms->Mui.MenuItem.Value.string}>
+        {React.string(Utils.String.capitalize(ms))}
+      </Mui.MenuItem>
     })
-    <select className="input" value={Movement.toString(value)} onChange>
+    <Mui.Select value={value->Movement.toString->Mui.Select.Value.string} onChange={onChange}>
       {React.array(selectors)}
-    </select>
+    </Mui.Select>
   }
 }
 
@@ -36,7 +38,9 @@ module InputNumberComponent = {
         },
       )
     }
-    <input pattern="[0-9]+" value={Belt.Int.toString(value)} type_="number" onChange />
+    <Mui.TextField
+      variant=#outlined value={value->Belt.Int.toString->Mui.TextField.Value.string} onChange
+    />
   }
 }
 
@@ -44,6 +48,7 @@ module WeightSelector = {
   @react.component
   let make = (~weight: WeightScheme.scheme, ~update: WeightScheme.scheme => unit) => {
     let (state, setState) = React.useState(() => weight)
+    let schemeType = WeightScheme.schemeToType(state)
     React.useEffect1(() => {
       update(state)
       None
@@ -64,21 +69,22 @@ module WeightSelector = {
         />
       | _ => <span />
       }}
-      <select
-        value={(WeightScheme.schemeToType(state) :> string)}
-        onChange={e => {
+      <Mui.Select
+        value={schemeType->WeightScheme.schemeTypeToString->Mui.Select.Value.string}
+        onChange={(e, _) => {
           ReactEvent.Form.preventDefault(e)
           let t = ReactEvent.Form.target(e)["value"]
           setState(s => WeightScheme.applyType(t, s))
         }}>
         {React.array(
           WeightScheme.schemeTypes->Belt.Array.map(t => {
-            <option key={(t :> string)} value={(t :> string)}>
-              {React.string((t :> string))}
-            </option>
+            let v = WeightScheme.schemeTypeToString(t)
+            <Mui.MenuItem key={v} value={v->Mui.MenuItem.Value.string}>
+              {React.string(v)}
+            </Mui.MenuItem>
           }),
         )}
-      </select>
+      </Mui.Select>
     </span>
   }
 }
@@ -196,16 +202,16 @@ module ExerciseDisplay = {
       p.movement == exercise.movement
     )
     <>
-      <td className="movement-display">
+      <Mui.TableCell className="movement-display">
         {if sameMovement {
           React.string("")
         } else {
           {React.string(Utils.String.capitalize(Movement.toString(movement)))}
         }}
-      </td>
-      <td> {React.string(Belt.Int.toString(sets))} </td>
-      <td> {React.string(Belt.Int.toString(reps))} </td>
-      <td> {React.string(WeightScheme.toString(weight))} </td>
+      </Mui.TableCell>
+      <Mui.TableCell> {React.string(Belt.Int.toString(sets))} </Mui.TableCell>
+      <Mui.TableCell> {React.string(Belt.Int.toString(reps))} </Mui.TableCell>
+      <Mui.TableCell> {React.string(WeightScheme.toString(weight))} </Mui.TableCell>
     </>
   }
 }
@@ -229,14 +235,14 @@ module NotesComponent = {
             className="notes-display"
             dangerouslySetInnerHTML={"__html": Utils.Markdown.convertHtml(converter, notes)}
           />
-          <button
-            className="edit-notes-button"
+          <Mui.Button
+            variant=#outlined
             onClick={e => {
               ReactEvent.Mouse.preventDefault(e)
               setState(s => {...s, editing: true})
             }}>
             {React.string("Edit Notes ✎")}
-          </button>
+          </Mui.Button>
         </>
       } else {
         <>
@@ -249,14 +255,14 @@ module NotesComponent = {
               }}
             />
           </div>
-          <button
-            className="edit-button"
+          <Mui.Button
+            variant=#outlined
             onClick={e => {
               ReactEvent.Mouse.preventDefault(e)
               setState(s => {...s, editing: false})
             }}>
             {React.string("✓")}
-          </button>
+          </Mui.Button>
         </>
       }}
     </div>
@@ -312,150 +318,178 @@ module WorkoutComponent = {
       None
     }, [state.workout])
 
-    <div className="workout-display">
-      <div className="workout-display-top">
+    let tableHeader =
+      <Mui.TableHead>
+        <Mui.TableRow>
+          <Mui.TableCell> {React.string("Exercise")} </Mui.TableCell>
+          <Mui.TableCell> {React.string("Sets")} </Mui.TableCell>
+          <Mui.TableCell> {React.string("Reps")} </Mui.TableCell>
+          <Mui.TableCell> {React.string("Loading")} </Mui.TableCell>
+          <Mui.TableCell> {React.string("Edit")} </Mui.TableCell>
+        </Mui.TableRow>
+      </Mui.TableHead>
+
+    let exerciseRow = (i, e) => {
+      let editableExercise =
+        <ExerciseEditor
+          exercise={e}
+          update={exercise => {
+            setState(state => {
+              {
+                editing: IndexSet.remove(state.editing, i),
+                workout: {
+                  ...state.workout,
+                  exercises: Utils.Array.setIndex(state.workout.exercises, i, exercise),
+                },
+              }
+            })
+          }}
+        />
+      let editButton =
+        <Mui.Button
+          variant=#contained
+          onClick={e => {
+            ReactEvent.Mouse.preventDefault(e)
+            setState(state => {...state, editing: IndexSet.add(state.editing, i)})
+          }}>
+          {React.string("✎")}
+        </Mui.Button>
+      let duplicateButton =
+        <Mui.Button
+          variant=#contained
+          onClick={event => {
+            ReactEvent.Mouse.preventDefault(event)
+            setState(state => {
+              let exercises = workout.exercises
+              {
+                editing: IndexSet.remove(state.editing, i),
+                workout: {
+                  ...workout,
+                  exercises: Utils.Array.insertAt(exercises, i, e),
+                },
+              }
+            })
+          }}>
+          {React.string("Duplicate")}
+        </Mui.Button>
+      let deleteButton =
+        <Mui.Button
+          variant=#contained
+          onClick={event => {
+            ReactEvent.Mouse.preventDefault(event)
+            setState(state => {
+              let exercises = workout.exercises
+              {
+                editing: IndexSet.remove(state.editing, i),
+                workout: {
+                  ...workout,
+                  exercises: Utils.Array.removeIndex(exercises, i),
+                },
+              }
+            })
+          }}>
+          {React.string("✖")}
+        </Mui.Button>
+      let controls =
+        <Mui.TableCell>
+          {editButton}
+          {deleteButton}
+          {duplicateButton}
+        </Mui.TableCell>
+      let exerciseDisplay =
+        <>
+          <ExerciseDisplay
+            exercise={e}
+            previous={if i > 0 {
+              Some(state.workout.exercises[i - 1])
+            } else {
+              None
+            }}
+          />
+          {controls}
+        </>
+      <tr
+        key={Belt.Int.toString(i)}
+        onDoubleClick={_ => setState(s => {...s, editing: IndexSet.add(s.editing, i)})}>
+        {if IndexSet.has(state.editing, i) {
+          editableExercise
+        } else {
+          exerciseDisplay
+        }}
+      </tr>
+    }
+
+    let tableBody =
+      <Mui.TableBody>
+        {React.array(workout.exercises->Belt.Array.mapWithIndex(exerciseRow))}
+      </Mui.TableBody>
+
+    let displayTop =
+      <div>
         <DateComponent
           date={state.workout.date}
           update={date => setState(s => {...s, workout: {...s.workout, date}})}
         />
-        <button onClick={_ => Utils.Clipboard.copy(Workout.workoutToString(state.workout))}>
+        <Mui.Button
+          variant=#contained
+          onClick={_ => Utils.Clipboard.copy(Workout.workoutToString(state.workout))}>
           {React.string("Copy to clipboard")}
-        </button>
-        <button onClick={_ => duplicate(state.workout)}> {React.string("Duplicate")} </button>
-        <button onClick={_ => delete(state.workout)}> {React.string("✖")} </button>
+        </Mui.Button>
+        <Mui.Button variant=#contained onClick={_ => duplicate(state.workout)}>
+          {React.string("Duplicate")}
+        </Mui.Button>
+        <Mui.Button onClick={_ => delete(state.workout)}> {React.string("✖")} </Mui.Button>
       </div>
-      <table className="exercise-display">
-        <thead>
-          <tr>
-            <th> {React.string("Exercise")} </th>
-            <th> {React.string("Sets")} </th>
-            <th> {React.string("Reps")} </th>
-            <th> {React.string("Loading")} </th>
-            <th className="exercise-control-header"> {React.string("Edit")} </th>
-          </tr>
-        </thead>
-        <tbody>
-          {React.array(
-            Belt.Array.mapWithIndex(workout.exercises, (i, e) => {
-              <tr
-                key={Belt.Int.toString(i)}
-                onDoubleClick={_ => setState(s => {...s, editing: IndexSet.add(s.editing, i)})}>
-                {if IndexSet.has(state.editing, i) {
-                  <ExerciseEditor
-                    exercise={e}
-                    update={exercise => {
-                      setState(state => {
-                        {
-                          editing: IndexSet.remove(state.editing, i),
-                          workout: {
-                            ...state.workout,
-                            exercises: Utils.Array.setIndex(state.workout.exercises, i, exercise),
-                          },
-                        }
-                      })
-                    }}
-                  />
-                } else {
-                  <>
-                    <ExerciseDisplay
-                      exercise={e}
-                      previous={if i > 0 {
-                        Some(state.workout.exercises[i - 1])
-                      } else {
-                        None
-                      }}
-                    />
-                    <td className="exercise-controls">
-                      <button
-                        className="edit-button"
-                        onClick={e => {
-                          ReactEvent.Mouse.preventDefault(e)
-                          setState(state => {...state, editing: IndexSet.add(state.editing, i)})
-                        }}>
-                        {React.string("✎")}
-                      </button>
-                      <button
-                        className="delete-button"
-                        onClick={event => {
-                          ReactEvent.Mouse.preventDefault(event)
-                          setState(state => {
-                            let exercises = workout.exercises
-                            {
-                              editing: IndexSet.remove(state.editing, i),
-                              workout: {
-                                ...workout,
-                                exercises: Utils.Array.removeIndex(exercises, i),
-                              },
-                            }
-                          })
-                        }}>
-                        {React.string("✖")}
-                      </button>
-                      <button
-                        className="duplicate-button"
-                        onClick={event => {
-                          ReactEvent.Mouse.preventDefault(event)
-                          setState(state => {
-                            let exercises = workout.exercises
-                            {
-                              editing: IndexSet.remove(state.editing, i),
-                              workout: {
-                                ...workout,
-                                exercises: Utils.Array.insertAt(exercises, i, e),
-                              },
-                            }
-                          })
-                        }}>
-                        {React.string("Duplicate")}
-                      </button>
-                    </td>
-                  </>
-                }}
-              </tr>
-            }),
-          )}
-        </tbody>
-      </table>
+
+    let exerciseAdder =
+      <ExerciseAdder
+        exercise={blankExercise}
+        update={exercise =>
+          setState(state => {
+            {
+              ...state,
+              workout: {
+                ...state.workout,
+                exercises: state.workout.exercises->Js.Array2.concat([exercise]),
+              },
+            }
+          })}
+      />
+
+    <div className="workout-display">
+      {displayTop}
+      <Mui.TableContainer>
+        <Mui.Table>
+          {tableHeader}
+          {tableBody}
+        </Mui.Table>
+      </Mui.TableContainer>
       <NotesComponent
         initialNotes={workout.notes}
         update={notes => setState(state => {...state, workout: {...state.workout, notes}})}
       />
-      <div className="exercise-editor">
-        <ExerciseAdder
-          exercise={blankExercise}
-          update={exercise =>
-            setState(state => {
-              {
-                ...state,
-                workout: {
-                  ...state.workout,
-                  exercises: state.workout.exercises->Js.Array2.concat([exercise]),
-                },
-              }
-            })}
-        />
-      </div>
+      <div className="exercise-editor"> {exerciseAdder} </div>
     </div>
   }
 }
 
 let testState: array<Workout.workout> = {
   [
-    "2022/11/10",
-    "2022/11/11",
-    "2022/11/12",
-    "2022/11/13",
-    "2022/11/14",
-    "2022/11/15",
-    "2022/11/16",
-    "2022/11/17",
-    "2022/11/18",
-    "2022/11/19",
-    "2022/11/20",
-    "2022/11/21",
-    "2022/11/22",
-    "2022/11/23",
     "2022/11/24",
+    "2022/11/25",
+    "2022/11/26",
+    "2022/11/27",
+    "2022/11/28",
+    "2022/11/29",
+    "2022/11/30",
+    "2022/11/01",
+    "2022/12/02",
+    "2022/12/03",
+    "2022/12/04",
+    "2022/12/05",
+    "2022/12/06",
+    "2022/12/07",
+    "2022/12/08",
   ]->Js.Array2.map(d => {
     let workout: Workout.workout = {
       date: Utils.Date.fromIso8601(d),
@@ -520,74 +554,83 @@ module WorkoutsComponent = {
         {...s, plan}
       })
     }
-    <div>
-      <h1> {React.string("Workout Tracker")} </h1>
-      <div className="week-title">
-        <button
-          className="move-button"
-          onClick={_ => setState(s => {...s, week: Utils.Date.daysBefore(s.week, 7.0)})}>
-          {React.string("←")}
-        </button>
-        <span className="week-display">
-          <b>
+    <>
+      <Mui.CssBaseline />
+      <Mui.Container component={Mui.Container.Component.string("main")}>
+        <Mui.AppBar position=#sticky elevation={Mui.Number.int(0)}>
+          <Mui.Toolbar>
+            <Mui.Typography variant=#h6 color=#inherit>
+              {React.string("Workout Tracker")}
+            </Mui.Typography>
+            <Mui.Divider />
+            <Mui.List>
+              <Mui.Button color=#inherit onClick={_ => addWorkout()}>
+                {React.string("Add Workout")}
+              </Mui.Button>
+              <Mui.Button
+                color=#inherit
+                onClick={_ => {
+                  let maybeWorkout = Workout.getWorkout(state.plan, Utils.Date.now())
+                  if Belt.Option.isSome(maybeWorkout) {
+                    let workout = Belt.Option.getUnsafe(maybeWorkout)
+                    Utils.Clipboard.copy(workout->Workout.workoutToString)
+                  }
+                }}>
+                {React.string("Copy today's workout")}
+              </Mui.Button>
+              <Mui.Button
+                color=#inherit
+                onClick={_ =>
+                  Utils.Spreadsheets.download(
+                    Workout.planToSpreadsheet(state.plan),
+                    "theplan.xlsx",
+                  )}>
+                {React.string("Download as Spreadsheet")}
+              </Mui.Button>
+            </Mui.List>
+          </Mui.Toolbar>
+        </Mui.AppBar>
+        <Mui.Paper variant=#outlined elevation={Mui.Number.int(3)}>
+          <Mui.Typography variant=#h4 align=#center>
+            <Mui.IconButton
+              onClick={_ => setState(s => {...s, week: Utils.Date.daysBefore(s.week, 7.0)})}>
+              <Icons.ArrowCircleLeft />
+            </Mui.IconButton>
             {React.string(
               "Week " ++
               Utils.Date.toIso8601(state.week) ++
               " to " ++
               Utils.Date.toIso8601(Utils.Date.daysAfter(state.week, 7.0)),
             )}
-          </b>
-        </span>
-        <button
-          className="move-button"
-          onClick={_ => setState(s => {...s, week: Utils.Date.daysAfter(s.week, 7.0)})}>
-          {React.string("→")}
-        </button>
-      </div>
-      <div className="workout-controls">
-        <button className="input" onClick={_ => addWorkout()}>
-          {React.string("Add Workout")}
-        </button>
-        <button
-          className="input"
-          onClick={_ => {
-            let maybeWorkout = Workout.getWorkout(state.plan, Utils.Date.now())
-            if Belt.Option.isSome(maybeWorkout) {
-              let workout = Belt.Option.getUnsafe(maybeWorkout)
-              Utils.Clipboard.copy(workout->Workout.workoutToString)
-            }
-          }}>
-          {React.string("Copy today's workout")}
-        </button>
-        <button
-          className="input"
-          onClick={_ =>
-            Utils.Spreadsheets.download(Workout.planToSpreadsheet(state.plan), "theplan.xlsx")}>
-          {React.string("Download as Spreadsheet")}
-        </button>
-      </div>
-      {React.array(
-        state.plan.workouts
-        ->Belt.Array.keep(w => {
-          state.week <= w.date && w.date < Utils.Date.daysAfter(state.week, 7.0)
-        })
-        ->Belt.Array.map(w => {
-          <WorkoutComponent
-            key={Utils.Date.toIso8601(w.date)}
-            workout={w}
-            update={workout => {
-              setState(s => {
-                {...s, plan: Workout.editWorkout(s.plan, w.date, workout)}
-              })
-            }}
-            delete={workout => {
-              setState(s => {...s, plan: Workout.removeWorkout(s.plan, workout.date)})
-            }}
-            duplicate={duplicateWorkout}
-          />
-        }),
-      )}
-    </div>
+            <Mui.IconButton
+              onClick={_ => setState(s => {...s, week: Utils.Date.daysAfter(s.week, 7.0)})}>
+              <Icons.ArrowCircleRight />
+            </Mui.IconButton>
+          </Mui.Typography>
+          {React.array(
+            state.plan.workouts
+            ->Belt.Array.keep(w => {
+              state.week <= w.date && w.date < Utils.Date.daysAfter(state.week, 7.0)
+            })
+            ->Belt.Array.map(w => {
+              <WorkoutComponent
+                key={Utils.Date.toIso8601(w.date)}
+                workout={w}
+                update={workout => {
+                  setState(s => {
+                    {...s, plan: Workout.editWorkout(s.plan, w.date, workout)}
+                  })
+                }}
+                delete={workout => {
+                  setState(s => {...s, plan: Workout.removeWorkout(s.plan, workout.date)})
+                }}
+                duplicate={duplicateWorkout}
+              />
+            }),
+          )}
+        </Mui.Paper>
+      </Mui.Container>
+    </>
   }
 }
 

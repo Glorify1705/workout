@@ -18,12 +18,17 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "@mui/icons-material": "^5.10.15",
+    "@mui/material": "^5.10.15",
     "@rescript/react": "^0.10.3",
     "@ryyppy/rescript-promise": "^2.1.0",
     "dompurify": "^2.4.0",
     "marked": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "rescript-material-ui": "^3.0.2",
     "rescript-webapi": "^0.6.1",
     "showdown": "^2.1.0",
     "write-excel-file": "^1.4.15"
